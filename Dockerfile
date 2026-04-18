@@ -36,5 +36,4 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 USER nextjs
 EXPOSE 3000
 
-# 시작 시 마이그레이션 자동 실행 후 앱 기동
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma db push --schema ./prisma/schema.prisma && npm run start"]
