@@ -1,25 +1,29 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elshop
     restart: unless-stopped
-    env_file: .env.production
+    env_file:
+      - .env.production
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - internal
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
         max-size: "10m"
         max-file: "5"
 
   db:
     image: postgres:16-alpine
+    container_name: postgres_db
     restart: unless-stopped
-    env_file: .env.production
+    env_file:
+      - .env.production
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -31,10 +35,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - internal
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
@@ -43,5 +45,7 @@ volumes:
   postgres_data:
 
 networks:
-  internal:
-    driver: bridge
+  default:
+    external: true
+    name: yuna-net
+
