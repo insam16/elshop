@@ -1,5 +1,5 @@
 services:
-  app:
+  elshop: 
     image: ghcr.io/insam16/elshop:latest
     container_name: elshop
     restart: unless-stopped
@@ -8,17 +8,20 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
-      db:
+      elshop-db:
         condition: service_healthy
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "5"
+    networks:
+      - yuna-net
+      - internal
 
-  db:
+  elshop-db:
     image: postgres:16-alpine
-    container_name: postgres_db
+    container_name: elshop_db
     restart: unless-stopped
     env_file:
       - .env.production
@@ -38,12 +41,15 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    networks:
+      - internal
 
 volumes:
   postgres_data:
 
 networks:
-  default:
+  yuna-net:
     external: true
-    name: yuna-net
+  internal:
+    internal: true
 
