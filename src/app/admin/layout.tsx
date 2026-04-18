@@ -18,7 +18,7 @@ export default async function AdminLayout({
           ADMIN
         </span>
         <span className="text-sm text-muted-foreground">
-          {session.user.nickname ?? session.user.name}
+          {session.user.nickname ?? "?"}
         </span>
       </div>
       {children}

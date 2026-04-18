@@ -20,7 +20,7 @@ export default async function Header() {
                 글쓰기
               </Link>
               <span className="text-muted-foreground">
-                {session.user.nickname ?? session.user.name ?? session.user.email}
+                {session.user.nickname ?? "?"}
               </span>
               <form
                 action={async () => {
