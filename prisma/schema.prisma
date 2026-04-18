@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────────────────────
+// Enums
+// ───────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PostCategory {
+  SELL  // 판매
+  BUY   // 구매
+  TRADE // 교환
+}
+
+enum PostStatus {
+  OPEN      // 거래 가능
+  RESERVED  // 예약 중
+  COMPLETED // 거래 완료
+}
+
+enum ReportReason {
+  FRAUD         // 사기
+  FALSE_INFO    // 허위 정보
+  INAPPROPRIATE // 부적절한 내용
+  OTHER         // 기타
+}
+
+enum ReportStatus {
+  PENDING    // 접수 대기
+  REVIEWING  // 검토 중
+  RESOLVED   // 처리 완료
+  REJECTED   // 반려
+}
+
+enum AdminActionType {
+  DELETE_POST    // 게시글 삭제
+  RESTORE_POST   // 게시글 복구
+  RESOLVE_REPORT // 신고 처리 완료
+  REJECT_REPORT  // 신고 반려
+  BAN_USER       // 사용자 제재 (추후 확장)
+}
+
+// ───────────────────────────────────────────
+// Models
+// ───────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  // Auth.js 필수 필드
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+  // 서비스 전용 필드
+  nickname      String?   @unique
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  accounts     Account[]
+  sessions     Session[]
+  posts        Post[]
+  comments     Comment[]
+  reports      Report[]      @relation("Reporter")
+  adminActions AdminAction[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ─── Auth.js 필수 모델 ───────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Post {
+  id        String       @id @default(cuid())
+  title     String
+  content   String
+  category  PostCategory
+  status    PostStatus   @default(OPEN)
+  authorId  String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?    // soft delete: 관리자 삭제 또는 사용자 삭제
+
+  author       User          @relation(fields: [authorId], references: [id])
+  images       PostImage[]
+  comments     Comment[]
+  reports      Report[]
+  adminActions AdminAction[]
+
+  @@index([authorId])
+  @@index([category, status]) // 목록 필터링 쿼리 최적화
+  @@index([createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+model PostImage {
+  id        String   @id @default(cuid())
+  postId    String
+  url       String
+  order     Int      @default(0) // 이미지 표시 순서
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_images")
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  content   String
+  authorId  String
+  postId    String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  author User @relation(fields: [authorId], references: [id])
+  post   Post @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+  @@map("comments")
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  postId     String
+  reason     ReportReason
+  detail     String?      // 신고 상세 내용 (선택 입력)
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  reporter     User          @relation("Reporter", fields: [reporterId], references: [id])
+  post         Post          @relation(fields: [postId], references: [id])
+  adminActions AdminAction[]
+
+  @@unique([reporterId, postId]) // 동일 유저의 중복 신고 방지
+  @@index([postId])
+  @@index([status])
+  @@map("reports")
+}
+
+// 관리자 처리 이력 로그 — 삭제하지 않음
+model AdminAction {
+  id         String          @id @default(cuid())
+  adminId    String
+  actionType AdminActionType
+  note       String?         // 처리 메모 (선택)
+  createdAt  DateTime        @default(now())
+
+  // 처리 대상: 신고 또는 게시글 (둘 중 하나만 채워짐)
+  postId   String?
+  reportId String?
+
+  admin  User    @relation(fields: [adminId], references: [id])
+  post   Post?   @relation(fields: [postId], references: [id])
+  report Report? @relation(fields: [reportId], references: [id])
+
+  @@index([adminId])
+  @@index([postId])
+  @@index([reportId])
+  @@map("admin_actions")
+}

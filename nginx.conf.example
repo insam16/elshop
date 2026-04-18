@@ -1,0 +1,30 @@
+server {
+    listen 80;
+    server_name your-domain.com; # 여기에 도메인을 입력하세요
+
+    # Static files (Next.js public folder)
+    location /_next/static {
+        proxy_pass http://127.0.0.1:3000/_next/static;
+        proxy_cache_valid 200 60m;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Real IP 전달
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Certbot SSL 설정 예시 (필요 시)
+    # listen 443 ssl;
+    # ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+}
