@@ -33,4 +33,4 @@ COPY --from=builder /app/prisma ./prisma
 USER nextjs
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma db push --schema ./prisma/schema.prisma && npm run start"]
+CMD ["sh", "-c", "npx prisma db push --schema ./prisma/schema.prisma && node server.js"]
