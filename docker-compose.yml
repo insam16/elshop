@@ -1,8 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/insam16/elshop:latest
     container_name: elshop
     restart: unless-stopped
     env_file:
