@@ -25,6 +25,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # standalone 빌드 결과물 복사
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
