@@ -15,7 +15,6 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
-    command: sh -c "npx prisma db push --schema ./prisma/schema.prisma && npm run start"
 
   db:
     image: postgres:16-alpine
