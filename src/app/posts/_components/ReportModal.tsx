@@ -11,7 +11,7 @@ const REASON_LABEL: Record<ReportReason, string> = {
   OTHER: "기타",
 };
 
-export default function ReportModal({ postId }: { postId: string }) {
+export default function ReportModal({ postId }: { postId: number }) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction, isPending] = useActionState<ReportState, FormData>(

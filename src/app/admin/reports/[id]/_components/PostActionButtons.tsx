@@ -5,7 +5,7 @@ import { hidePost, restorePost } from "@/lib/actions/admin";
 
 type Props = {
   reportId: string;
-  postId: string;
+  postId: number;
   isHidden: boolean;
 };
 

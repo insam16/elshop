@@ -81,7 +81,7 @@ export async function anonymizeExpiredUsers(): Promise<AnonymizeResult> {
 
 export async function hidePost(
   reportId: string,
-  postId: string,
+  postId: number,
   note: string | null
 ): Promise<AdminActionState> {
   const session = await auth();
@@ -104,7 +104,7 @@ export async function hidePost(
 
 export async function restorePost(
   reportId: string,
-  postId: string,
+  postId: number,
   note: string | null
 ): Promise<AdminActionState> {
   const session = await auth();

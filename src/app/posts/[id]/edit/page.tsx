@@ -9,7 +9,9 @@ export default async function EditPostPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: idStr } = await params;
+  const id = parseInt(idStr, 10);
+  if (isNaN(id)) notFound();
   const [post, session] = await Promise.all([
     prisma.post.findUnique({ where: { id, deletedAt: null } }),
     auth(),

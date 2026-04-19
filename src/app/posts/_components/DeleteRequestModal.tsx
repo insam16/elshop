@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { requestPostDeletion, type ReportState } from "@/lib/actions/report";
 
-export default function DeleteRequestModal({ postId }: { postId: string }) {
+export default function DeleteRequestModal({ postId }: { postId: number }) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction, isPending] = useActionState<ReportState, FormData>(

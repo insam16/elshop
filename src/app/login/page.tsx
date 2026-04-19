@@ -22,6 +22,9 @@ export default async function LoginPage() {
             네이버로 로그인
           </button>
         </form>
+        <p className="mt-4 text-xs text-muted-foreground text-center">
+          14세 미만은 이용할 수 없습니다.
+        </p>
       </div>
     </div>
   );

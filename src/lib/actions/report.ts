@@ -21,19 +21,17 @@ export async function createReport(
   const reasonRaw = formData.get("reason");
   const detailRaw = formData.get("detail");
 
-  const postId = typeof postIdRaw === "string" ? postIdRaw : "";
+  const postId = parseInt(typeof postIdRaw === "string" ? postIdRaw : "", 10);
   const reason = typeof reasonRaw === "string" ? reasonRaw : "";
   const detail = typeof detailRaw === "string" ? detailRaw.trim().slice(0, 500) : null;
 
   if (!postId) return { error: "게시글 ID가 누락되었습니다." };
   if (!reason) return { error: "신고 사유가 누락되었습니다." };
 
-  // reason 유효성 검사
   if (!Object.values(ReportReason).includes(reason as ReportReason)) {
     return { error: "올바른 신고 사유를 선택해주세요." };
   }
 
-  // 게시글 존재 여부 + 작성자 확인
   const post = await prisma.post.findUnique({
     where: { id: postId, deletedAt: null },
     select: { authorId: true },
@@ -66,8 +64,10 @@ export async function requestPostDeletion(
   const session = await auth();
   if (!session) redirect("/login");
 
-  const postId = typeof formData.get("postId") === "string" ? formData.get("postId") as string : "";
+  const postId = parseInt(formData.get("postId") as string, 10);
   const reason = (formData.get("reason") as string | null)?.trim().slice(0, 500) ?? "";
+
+  if (!postId) return { error: "게시글 ID가 누락되었습니다." };
 
   const post = await prisma.post.findUnique({
     where: { id: postId, deletedAt: null },

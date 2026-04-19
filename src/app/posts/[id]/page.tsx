@@ -13,16 +13,25 @@ export default async function PostDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: idStr } = await params;
+  const id = parseInt(idStr, 10);
+  if (isNaN(id)) notFound();
   const [post, session] = await Promise.all([
     prisma.post.findUnique({
       where: { id, deletedAt: null },
       include: {
         author: { select: { id: true, publicId: true, nickname: true, name: true } },
         comments: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, parentId: null },
           orderBy: { createdAt: "asc" },
-          include: { author: { select: { id: true, publicId: true, nickname: true, name: true } } },
+          include: {
+            author: { select: { id: true, publicId: true, nickname: true, name: true } },
+            replies: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: "asc" },
+              include: { author: { select: { id: true, publicId: true, nickname: true, name: true } } },
+            },
+          },
         },
       },
     }),

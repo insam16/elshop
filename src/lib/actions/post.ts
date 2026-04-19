@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePost } from "@/lib/validators/post";
 import { PostCategory, PostStatus } from "@prisma/client";
+import { notifyNewPost } from "@/lib/notifications";
 
 export type ActionState = {
   errors?: {
@@ -50,13 +52,22 @@ export async function createPost(
     },
   });
 
+  after(async () => {
+    await notifyNewPost({
+      postId: post.id,
+      authorId: session.user.id,
+      title: post.title,
+      content: post.content,
+    });
+  });
+
   redirect(`/posts/${post.id}`);
 }
 
 // ─── 수정 ────────────────────────────────────
 
 export async function updatePost(
-  id: string,
+  id: number,
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {

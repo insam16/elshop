@@ -10,7 +10,7 @@ export default function HomePage() {
           href="/posts"
           className="bg-primary-base text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition-opacity"
         >
-          거래 목록 보기
+          게시판 보기
         </Link>
         <Link
           href="/posts/new"

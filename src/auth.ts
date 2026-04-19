@@ -13,10 +13,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       profile(profile: NaverProfile) {
         return {
           id: profile.response.id,
-          name: profile.response.name,
-          email: profile.response.email,
-          image: profile.response.profile_image,
-          nickname: profile.response.nickname,
         };
       },
     }),

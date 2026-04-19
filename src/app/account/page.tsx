@@ -1,18 +1,51 @@
-import { auth } from "@/auth";
+import Link from "next/link";
+import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import DeleteAccountButton from "./DeleteAccountButton";
+import KeywordSection from "./_components/KeywordSection";
 
 export default async function AccountPage() {
   const session = await auth();
   if (!session) redirect("/login");
 
+  const keywords = await prisma.notificationKeyword.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, keyword: true, isEnabled: true },
+  });
+
   return (
     <div className="max-w-sm mx-auto mt-16 space-y-8">
-      <h1 className="text-2xl font-bold">계정 설정</h1>
+      <h1 className="text-2xl font-bold">설정</h1>
 
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">닉네임</p>
         <p className="font-medium">{session.user.nickname ?? "-"}</p>
+        <Link
+          href={`/users/${session.user.publicId}`}
+          className="inline-block mt-1 text-xs text-muted-foreground hover:text-primary-base transition-colors"
+        >
+          내 활동 보기 →
+        </Link>
+      </div>
+
+      <form
+        action={async () => {
+          "use server";
+          await signOut({ redirectTo: "/" });
+        }}
+      >
+        <button
+          type="submit"
+          className="w-full border border-border-base rounded-lg px-4 py-2 text-sm hover:bg-muted transition-colors text-left"
+        >
+          로그아웃
+        </button>
+      </form>
+
+      <div className="border-t pt-8">
+        <KeywordSection keywords={keywords} />
       </div>
 
       <div className="border-t pt-8 space-y-3">

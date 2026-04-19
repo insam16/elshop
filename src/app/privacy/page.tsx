@@ -17,18 +17,13 @@ export default function PrivacyPage() {
             </thead>
             <tbody className="divide-y divide-border-base">
               <tr>
-                <td className="px-3 py-2">이메일</td>
-                <td className="px-3 py-2">회원 식별</td>
+                <td className="px-3 py-2">네이버 계정 식별자</td>
+                <td className="px-3 py-2">회원 식별 (로그인)</td>
                 <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
               </tr>
               <tr>
                 <td className="px-3 py-2">닉네임 (직접 입력)</td>
                 <td className="px-3 py-2">게시판 활동</td>
-                <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2">소셜 프로필 이미지</td>
-                <td className="px-3 py-2">UI 표시 (선택)</td>
                 <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
               </tr>
               <tr>
@@ -77,10 +72,6 @@ export default function PrivacyPage() {
                 <td className="px-3 py-2">Naver Corp.</td>
                 <td className="px-3 py-2">소셜 로그인 인증</td>
               </tr>
-              <tr>
-                <td className="px-3 py-2">Vercel Inc. (예정)</td>
-                <td className="px-3 py-2">서버 운영 및 데이터 저장</td>
-              </tr>
             </tbody>
           </table>
         </Section>
@@ -111,11 +102,19 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="8. 개인정보 보호책임자">
+        <Section title="8. 14세 미만 이용 제한">
           <p>
-            개인정보 처리에 관한 문의는 서비스 운영자에게 연락해 주세요.
-            신속하게 답변드리겠습니다.
+            서비스는 14세 미만 아동의 개인정보를 수집하지 않으며, 14세 미만은 서비스를 이용할 수 없습니다.
+            14세 미만으로 확인된 경우 즉시 계정이 삭제됩니다.
           </p>
+        </Section>
+
+        <Section title="9. 개인정보 보호책임자">
+          <p>개인정보 처리에 관한 문의는 아래 책임자에게 연락해 주세요.</p>
+          <ul className="mt-1">
+            <li>성명: 나유민</li>
+            <li>이메일: wsand316@gmail.com</li>
+          </ul>
         </Section>
 
       </PolicyLayout>

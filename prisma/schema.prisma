@@ -49,6 +49,12 @@ enum AdminActionType {
   BAN_USER       // 사용자 제재 (추후 확장)
 }
 
+enum NotificationType {
+  COMMENT_ON_MY_POST   // 내 게시글에 댓글
+  REPLY_TO_MY_COMMENT  // 내 댓글에 답글
+  KEYWORD_MATCH        // 키워드 알림
+}
+
 // ───────────────────────────────────────────
 // Models
 // ───────────────────────────────────────────
@@ -56,17 +62,15 @@ enum AdminActionType {
 model User {
   id            String    @id @default(cuid())
   publicId      String    @unique
-  // Auth.js 필수 필드
   name          String?
-  email         String?    @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  // 서비스 전용 필드
   nickname      String?   @unique
   role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   deletedAt     DateTime?
-  retainUntil   DateTime? // 법적 보존 기간 (신고 이력 유저)
+  retainUntil   DateTime?
 
   accounts     Account[]
   sessions     Session[]
@@ -74,6 +78,10 @@ model User {
   comments     Comment[]
   reports      Report[]      @relation("Reporter")
   adminActions AdminAction[]
+
+  notificationsReceived Notification[]      @relation("NotificationReceiver")
+  notificationsActed    Notification[]      @relation("NotificationActor")
+  notificationKeywords  NotificationKeyword[]
 
   @@index([email])
   @@map("users")
@@ -122,33 +130,37 @@ model VerificationToken {
 }
 
 model Post {
-  id        String       @id @default(cuid())
-  title     String
-  content   String
-  category  PostCategory
-  status    PostStatus   @default(OPEN)
-  authorId  String
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  deletedAt DateTime?    // soft delete: 관리자 삭제 또는 사용자 삭제
+  id           Int          @id @default(autoincrement())
+  title        String
+  content      String
+  category     PostCategory
+  status       PostStatus   @default(OPEN)
+  authorId     String
+  isPremium    Boolean      @default(false)
+  premiumUntil DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
 
-  author       User          @relation(fields: [authorId], references: [id])
-  images       PostImage[]
-  comments     Comment[]
-  reports      Report[]
-  adminActions AdminAction[]
+  author        User           @relation(fields: [authorId], references: [id])
+  images        PostImage[]
+  comments      Comment[]
+  reports       Report[]
+  adminActions  AdminAction[]
+  notifications Notification[]
 
   @@index([authorId])
-  @@index([category, status]) // 목록 필터링 쿼리 최적화
+  @@index([category, status])
   @@index([createdAt(sort: Desc)])
+  @@index([isPremium, premiumUntil])
   @@map("posts")
 }
 
 model PostImage {
   id        String   @id @default(cuid())
-  postId    String
+  postId    Int
   url       String
-  order     Int      @default(0) // 이미지 표시 순서
+  order     Int      @default(0)
   createdAt DateTime @default(now())
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -161,23 +173,28 @@ model Comment {
   id        String    @id @default(cuid())
   content   String
   authorId  String
-  postId    String
+  postId    Int
+  parentId  String?
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
-  author User @relation(fields: [authorId], references: [id])
-  post   Post @relation(fields: [postId], references: [id])
+  author        User           @relation(fields: [authorId], references: [id])
+  post          Post           @relation(fields: [postId], references: [id])
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id])
+  replies       Comment[]      @relation("CommentReplies")
+  notifications Notification[]
 
   @@index([postId])
+  @@index([parentId])
   @@map("comments")
 }
 
 model Report {
   id         String       @id @default(cuid())
   reporterId String
-  postId     String
+  postId     Int
   reason     ReportReason
-  detail     String?      // 신고 상세 내용 (선택 입력)
+  detail     String?
   status     ReportStatus @default(PENDING)
   createdAt  DateTime     @default(now())
 
@@ -185,22 +202,20 @@ model Report {
   post         Post          @relation(fields: [postId], references: [id])
   adminActions AdminAction[]
 
-  @@unique([reporterId, postId]) // 동일 유저의 중복 신고 방지
+  @@unique([reporterId, postId])
   @@index([postId])
   @@index([status])
   @@map("reports")
 }
 
-// 관리자 처리 이력 로그 — 삭제하지 않음
 model AdminAction {
   id         String          @id @default(cuid())
   adminId    String
   actionType AdminActionType
-  note       String?         // 처리 메모 (선택)
+  note       String?
   createdAt  DateTime        @default(now())
 
-  // 처리 대상: 신고 또는 게시글 (둘 중 하나만 채워짐)
-  postId   String?
+  postId   Int?
   reportId String?
 
   admin  User    @relation(fields: [adminId], references: [id])
@@ -211,4 +226,41 @@ model AdminAction {
   @@index([postId])
   @@index([reportId])
   @@map("admin_actions")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String           // 수신자
+  actorUserId String           // 발신자
+  type        NotificationType
+  title       String
+  body        String?
+  link        String
+  isRead      Boolean          @default(false)
+  postId      Int?
+  commentId   String?
+  createdAt   DateTime         @default(now())
+
+  user    User     @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User     @relation("NotificationActor", fields: [actorUserId], references: [id])
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model NotificationKeyword {
+  id        String   @id @default(cuid())
+  userId    String
+  keyword   String
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, keyword])
+  @@index([isEnabled])
+  @@map("notification_keywords")
 }
