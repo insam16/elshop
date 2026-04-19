@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { updateReportStatus } from "@/lib/actions/admin";
 import { ReportReason, ReportStatus, AdminActionType } from "@prisma/client";
 import ReportActionForm from "./_components/ReportActionForm";
+import PostActionButtons from "./_components/PostActionButtons";
 
 const REASON_LABEL: Record<ReportReason, string> = {
   FRAUD: "사기",
@@ -27,6 +28,13 @@ const STATUS_BADGE: Record<ReportStatus, string> = {
   REJECTED: "bg-gray-100 text-gray-500",
 };
 
+function adminDisplayName(user: { nickname: string | null; name: string | null; email: string | null; retainUntil: Date | null }) {
+  const hasData = user.nickname !== null || user.name !== null;
+  const retained = !!user.retainUntil && user.retainUntil > new Date();
+  if (hasData) return { name: user.nickname ?? user.name ?? "(닉네임 없음)", email: user.email, retained };
+  return { name: "탈퇴한 유저", email: null, retained: false };
+}
+
 const ACTION_LABEL: Record<AdminActionType, string> = {
   DELETE_POST: "게시글 삭제",
   RESTORE_POST: "게시글 복구",
@@ -48,14 +56,14 @@ export default async function AdminReportDetailPage({
   const report = await prisma.report.findUnique({
     where: { id },
     include: {
-      reporter: { select: { nickname: true, name: true, email: true } },
+      reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
       post: {
         select: {
           id: true,
           title: true,
           content: true,
           deletedAt: true,
-          author: { select: { nickname: true, name: true, email: true } },
+          author: { select: { nickname: true, name: true, email: true, retainUntil: true } },
         },
       },
       adminActions: {
@@ -100,8 +108,7 @@ export default async function AdminReportDetailPage({
 
           <dt className="text-muted-foreground">신고자</dt>
           <dd>
-            {report.reporter.nickname ?? report.reporter.name}
-            <span className="text-xs text-muted-foreground ml-1">({report.reporter.email})</span>
+            {(() => { const d = adminDisplayName(report.reporter); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
           </dd>
 
           <dt className="text-muted-foreground">접수일</dt>
@@ -126,8 +133,7 @@ export default async function AdminReportDetailPage({
 
           <dt className="text-muted-foreground">작성자</dt>
           <dd>
-            {report.post.author.nickname ?? report.post.author.name}
-            <span className="text-xs text-muted-foreground ml-1">({report.post.author.email})</span>
+            {(() => { const d = adminDisplayName(report.post.author); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
           </dd>
 
           <dt className="text-muted-foreground">내용</dt>
@@ -138,9 +144,24 @@ export default async function AdminReportDetailPage({
         </dl>
       </section>
 
-      {/* 상태 변경 폼 */}
+      {/* 게시글 숨김/복구 */}
       <section className="bg-card border border-border-base rounded-xl p-6">
-        <h2 className="font-bold text-sm mb-4">처리</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-sm">게시글 처리</h2>
+          <span className={`text-xs px-2 py-0.5 rounded font-medium ${report.post.deletedAt ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
+            {report.post.deletedAt ? "숨김" : "게시 중"}
+          </span>
+        </div>
+        <PostActionButtons
+          reportId={report.id}
+          postId={report.post.id}
+          isHidden={!!report.post.deletedAt}
+        />
+      </section>
+
+      {/* 신고 상태 변경 폼 */}
+      <section className="bg-card border border-border-base rounded-xl p-6">
+        <h2 className="font-bold text-sm mb-4">신고 처리</h2>
         <ReportActionForm action={action} currentStatus={report.status} />
       </section>
 

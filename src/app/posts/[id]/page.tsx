@@ -4,8 +4,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_LABEL, STATUS_LABEL } from "@/lib/validators/post";
 import { formatDate } from "@/lib/utils/date";
-import DeleteButton from "../_components/DeleteButton";
 import ReportModal from "../_components/ReportModal";
+import DeleteRequestModal from "../_components/DeleteRequestModal";
 import Comments from "./_components/Comments";
 
 export default async function PostDetailPage({
@@ -18,11 +18,11 @@ export default async function PostDetailPage({
     prisma.post.findUnique({
       where: { id, deletedAt: null },
       include: {
-        author: { select: { id: true, nickname: true, name: true } },
+        author: { select: { id: true, publicId: true, nickname: true, name: true } },
         comments: {
           where: { deletedAt: null },
           orderBy: { createdAt: "asc" },
-          include: { author: { select: { id: true, nickname: true, name: true } } },
+          include: { author: { select: { id: true, publicId: true, nickname: true, name: true } } },
         },
       },
     }),
@@ -55,7 +55,11 @@ export default async function PostDetailPage({
 
         {/* 메타 */}
         <div className="text-sm text-muted-foreground mb-6">
-          {post.author.nickname ?? post.author.name} ·{" "}
+          {post.author.nickname ? (
+            <Link href={`/users/${post.author.publicId}`} className="hover:text-primary-base transition-colors">
+              {post.author.nickname}
+            </Link>
+          ) : "탈퇴한 유저"} ·{" "}
           {formatDate(post.createdAt)}
         </div>
 
@@ -67,14 +71,14 @@ export default async function PostDetailPage({
         {/* 하단 버튼 */}
         <div className="flex justify-between items-center">
           {isAuthor ? (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Link
                 href={`/posts/${id}/edit`}
                 className="text-sm border border-border-base px-3 py-1 rounded hover:bg-muted transition-colors"
               >
                 수정
               </Link>
-              <DeleteButton postId={id} />
+              <DeleteRequestModal postId={id} />
             </div>
           ) : (
             <div />

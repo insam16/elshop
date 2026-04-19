@@ -94,21 +94,3 @@ export async function updatePost(
 
   redirect(`/posts/${id}`);
 }
-
-// ─── 삭제 ────────────────────────────────────
-
-export async function deletePost(id: string): Promise<ActionState> {
-  const session = await auth();
-  if (!session) redirect("/login");
-
-  const post = await prisma.post.findUnique({ where: { id, deletedAt: null } });
-  if (!post) return { errors: { general: "게시글을 찾을 수 없습니다." } };
-  if (post.authorId !== session.user.id) return { errors: { general: "삭제 권한이 없습니다." } };
-
-  await prisma.post.update({
-    where: { id },
-    data: { deletedAt: new Date() },
-  });
-
-  redirect("/posts");
-}

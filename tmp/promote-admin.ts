@@ -27,3 +27,24 @@ async function main() {
 }
 
 main();
+
+// ❯ admin으로 승급시키는 방법
+// npx tsx tmp/promote-admin.ts
+// 
+// ● PostgreSQL 컨테이너에서 직접 SQL로 변경하면 됩니다.
+// 
+//   docker exec -it postgres_db psql -U $POSTGRES_USER -d $POSTGRES_DB
+// 
+//   접속 후:
+// 
+//   -- 현재 유저 확인
+//   SELECT id, email, nickname, role FROM users;
+// 
+//   -- admin으로 승급 (이메일로)
+//   UPDATE users SET role = 'ADMIN' WHERE email = '본인이메일@example.com';
+// 
+//   -- 확인
+//   SELECT email, role FROM users WHERE email = '본인이메일@example.com';
+// 
+//   -- 나가기
+//   \q

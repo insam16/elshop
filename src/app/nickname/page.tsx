@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { validateNickname } from "@/lib/validators/nickname";
@@ -57,6 +58,7 @@ export default async function NicknamePage() {
       return { error: "닉네임 저장 중 오류가 발생했습니다." };
     }
 
+    revalidatePath("/", "layout");
     redirect("/");
   }
 

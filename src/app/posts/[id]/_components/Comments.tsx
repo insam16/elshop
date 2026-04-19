@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useTransition, useRef } from "react";
 import { createComment, deleteComment, type CommentState } from "@/lib/actions/comment";
 import { formatDate } from "@/lib/utils/date";
@@ -8,7 +9,7 @@ type Comment = {
   id: string;
   content: string;
   createdAt: Date;
-  author: { id: string; nickname: string | null; name: string | null };
+  author: { id: string; publicId: string; nickname: string | null; name: string | null };
 };
 
 type Props = {
@@ -108,7 +109,11 @@ function CommentItem({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">
-            {comment.author.nickname ?? comment.author.name}
+            {comment.author.nickname ? (
+              <Link href={`/users/${comment.author.publicId}`} className="hover:text-primary-base transition-colors">
+                {comment.author.nickname}
+              </Link>
+            ) : "탈퇴한 유저"}
           </span>
           <span>{formatDate(comment.createdAt)}</span>
         </div>

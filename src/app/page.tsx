@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <div className="text-center py-16">
-      <h1 className="text-3xl font-bold mb-4">엘샵에 오신 걸 환영합니다</h1>
+      <h1 className="text-3xl font-bold mb-4">엘샵에 오신 것을 환영합니다</h1>
       <p className="text-muted-foreground mb-8">엘소드 유저들을 위한 아이템 거래 게시판입니다.</p>
       <div className="flex justify-center gap-4 flex-wrap">
         <Link
@@ -20,20 +20,49 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <div className="mt-12 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
-        <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
-        <span className="font-semibold uppercase tracking-wider">Notice</span>
-        <a
-          href="https://blog.insam16.dev/2026/04/18/%ec%97%98%ec%83%b5-%ec%98%a4%ed%94%88-%ec%95%88%eb%82%b4%eb%93%9c%eb%a6%bd%eb%8b%88%eb%8b%a4/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline"
-        >
-          엘샵 오픈 안내드립니다 (2026.04.18)
-        </a>
-        <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+      <div className="flex flex-col items-center">
+        <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
+          <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
+          <a
+            href="https://blog.insam16.dev/2026/04/18/%ec%97%98%ec%83%b5-%ec%98%a4%ed%94%88-%ec%95%88%eb%82%b4%eb%93%9c%eb%a6%bd%eb%8b%88%eb%8b%a4/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            엘샵 오픈 안내드립니다 (2026.04.18)
+          </a>
+          <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+        <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
+          <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
+          <a
+            href="https://forms.gle/wcEjVs11Djt1uU74A"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            버그 신고 / 기능 요청 (구글폼)
+          </a>
+          <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+        <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
+          <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
+          <a
+            href="https://open.kakao.com/me/insam16"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            빠른 문의 (카카오톡)
+          </a>
+          <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
     </div>
   );

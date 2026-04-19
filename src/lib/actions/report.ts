@@ -58,3 +58,38 @@ export async function createReport(
     return { error: "신고 처리 중 오류가 발생했습니다." };
   }
 }
+
+export async function requestPostDeletion(
+  _prev: ReportState,
+  formData: FormData
+): Promise<ReportState> {
+  const session = await auth();
+  if (!session) redirect("/login");
+
+  const postId = typeof formData.get("postId") === "string" ? formData.get("postId") as string : "";
+  const reason = (formData.get("reason") as string | null)?.trim().slice(0, 500) ?? "";
+
+  const post = await prisma.post.findUnique({
+    where: { id: postId, deletedAt: null },
+    select: { authorId: true },
+  });
+
+  if (!post) return { error: "게시글을 찾을 수 없습니다." };
+  if (post.authorId !== session.user.id) return { error: "본인 게시글만 삭제 요청할 수 있습니다." };
+
+  try {
+    await prisma.report.create({
+      data: {
+        reporterId: session.user.id,
+        postId,
+        reason: ReportReason.OTHER,
+        detail: `[작성자 삭제 요청] ${reason}`.trim(),
+      },
+    });
+    return { success: true };
+  } catch (e: unknown) {
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") return { error: "이미 삭제 요청한 게시글입니다." };
+    return { error: "요청 처리 중 오류가 발생했습니다." };
+  }
+}

@@ -51,7 +51,7 @@ export default async function PostsPage({
         : {}),
     },
     include: {
-      author: { select: { nickname: true, name: true } },
+      author: { select: { id: true, publicId: true, nickname: true, name: true } },
       _count: {
         select: {
           comments: { where: { deletedAt: null } }
@@ -86,11 +86,8 @@ export default async function PostsPage({
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (
             <li key={post.id}>
-              <Link
-                href={`/posts/${post.id}`}
-                className="flex items-center justify-between bg-card border border-border-base rounded-xl px-4 py-3 hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center justify-between bg-card border border-border-base rounded-xl px-4 py-3 hover:bg-muted transition-colors">
+                <Link href={`/posts/${post.id}`} className="flex items-center gap-2 min-w-0 flex-1">
                   <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${CATEGORY_BADGE[post.category]}`}>
                     {CATEGORY_LABEL[post.category]}
                   </span>
@@ -103,12 +100,16 @@ export default async function PostsPage({
                       [{post._count.comments}]
                     </span>
                   )}
-                </div>
+                </Link>
                 <div className="text-xs text-muted-foreground shrink-0 ml-3">
-                  {post.author.nickname ?? post.author.name} ·{" "}
+                  {post.author.nickname ? (
+                    <Link href={`/users/${post.author.publicId}`} className="hover:text-primary-base transition-colors">
+                      {post.author.nickname}
+                    </Link>
+                  ) : "탈퇴한 유저"} ·{" "}
                   {formatDate(post.createdAt)}
                 </div>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>
