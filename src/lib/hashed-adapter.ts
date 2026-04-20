@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
+import { generateTempNickname } from "@/lib/temp-nickname";
 
 function hashNaverId(naverId: string): string {
   return crypto
@@ -20,8 +21,10 @@ export function withHashedNaverId(adapter: Adapter): Adapter {
   return {
     ...adapter,
 
-    createUser: (user: AdapterUser) =>
-      adapter.createUser!({ ...user, publicId: nanoid(12) }),
+    createUser: async (user: AdapterUser) => {
+      const nickname = await generateTempNickname();
+      return adapter.createUser!({ ...user, publicId: nanoid(12), nickname });
+    },
 
     linkAccount: (account: AdapterAccount) =>
       adapter.linkAccount!(hashAccount(account)),

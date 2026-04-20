@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ReportReason, ReportStatus } from "@prisma/client";
-import AnonymizeButton from "./_components/AnonymizeButton";
 
 const PAGE_SIZE = 20;
 
@@ -36,7 +35,7 @@ const STATUS_BADGE: Record<ReportStatus, string> = {
   REJECTED: "bg-gray-100 text-gray-500",
 };
 
-export default async function AdminReportsPage({
+export default async function AdminCommentReportsPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -48,23 +47,25 @@ export default async function AdminReportsPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const [reports, total] = await Promise.all([
-    prisma.report.findMany({
+    prisma.commentReport.findMany({
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
         reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
-        post: {
+        comment: {
           select: {
             id: true,
-            title: true,
+            content: true,
             deletedAt: true,
+            parentId: true,
+            postId: true,
             author: { select: { nickname: true, name: true, email: true, retainUntil: true } },
           },
         },
       },
     }),
-    prisma.report.count(),
+    prisma.commentReport.count(),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -72,11 +73,8 @@ export default async function AdminReportsPage({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold">신고 목록 (관리자)</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">총 {total}건</span>
-          <AnonymizeButton />
-        </div>
+        <h1 className="text-xl font-bold">댓글/답글 신고 목록</h1>
+        <span className="text-sm text-muted-foreground">총 {total}건</span>
       </div>
 
       {reports.length === 0 ? (
@@ -87,11 +85,11 @@ export default async function AdminReportsPage({
             <table className="w-full text-sm bg-card border border-border-base rounded-xl overflow-hidden">
               <thead className="bg-muted text-muted-foreground text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium">신고 게시글</th>
-                  <th className="px-4 py-3 font-medium">게시글 작성자</th>
+                  <th className="px-4 py-3 font-medium">종류</th>
+                  <th className="px-4 py-3 font-medium">신고 댓글 내용</th>
+                  <th className="px-4 py-3 font-medium">작성자</th>
                   <th className="px-4 py-3 font-medium">신고자</th>
                   <th className="px-4 py-3 font-medium">사유</th>
-                  <th className="px-4 py-3 font-medium">상세</th>
                   <th className="px-4 py-3 font-medium">상태</th>
                   <th className="px-4 py-3 font-medium">일시</th>
                   <th className="px-4 py-3 font-medium"></th>
@@ -101,29 +99,25 @@ export default async function AdminReportsPage({
                 {reports.map((report) => (
                   <tr key={report.id} className="hover:bg-muted/50 transition-colors align-top">
                     <td className="px-4 py-3">
-                      {report.post.deletedAt ? (
-                        <span className="text-muted-foreground line-through">
-                          {report.post.title}
-                        </span>
-                      ) : (
-                        <a
-                          href={`/posts/${report.post.id}`}
-                          className="text-primary-base hover:underline"
-                        >
-                          {report.post.title}
-                        </a>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${report.comment.parentId ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+                        {report.comment.parentId ? "답글" : "댓글"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 max-w-[200px]">
+                      <a href={`/posts/${report.comment.postId}`} className="text-xs text-muted-foreground hover:text-primary-base break-words line-clamp-2">
+                        {report.comment.content.slice(0, 60)}{report.comment.content.length > 60 && "..."}
+                      </a>
+                      {report.comment.deletedAt && (
+                        <span className="ml-1 text-[10px] text-red-500 border border-red-300 px-1 rounded">삭제됨</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {(() => { const d = adminDisplayName(report.post.author); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
+                      {(() => { const d = adminDisplayName(report.comment.author); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {(() => { const d = adminDisplayName(report.reporter); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
                     </td>
                     <td className="px-4 py-3">{REASON_LABEL[report.reason]}</td>
-                    <td className="px-4 py-3 max-w-[160px] text-muted-foreground text-xs break-words">
-                      {report.detail ?? "-"}
-                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_BADGE[report.status]}`}>
                         {STATUS_LABEL[report.status]}
@@ -134,7 +128,7 @@ export default async function AdminReportsPage({
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/admin/reports/${report.id}`}
+                        href={`/admin/comment-reports/${report.id}`}
                         className="text-primary-base hover:underline text-xs"
                       >
                         상세
@@ -146,22 +140,21 @@ export default async function AdminReportsPage({
             </table>
           </div>
 
-          {/* 페이지네이션 */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-1 mt-6">
-              <PaginationLink href={`/admin/reports?page=${page - 1}`} disabled={page <= 1}>
+              <PaginationLink href={`/admin/comment-reports?page=${page - 1}`} disabled={page <= 1}>
                 ←
               </PaginationLink>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <PaginationLink
                   key={p}
-                  href={`/admin/reports?page=${p}`}
+                  href={`/admin/comment-reports?page=${p}`}
                   active={p === page}
                 >
                   {p}
                 </PaginationLink>
               ))}
-              <PaginationLink href={`/admin/reports?page=${page + 1}`} disabled={page >= totalPages}>
+              <PaginationLink href={`/admin/comment-reports?page=${page + 1}`} disabled={page >= totalPages}>
                 →
               </PaginationLink>
             </div>

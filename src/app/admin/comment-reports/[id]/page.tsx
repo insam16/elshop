@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { updateReportStatus } from "@/lib/actions/admin";
-import { ReportReason, ReportStatus, AdminActionType } from "@prisma/client";
-import ReportActionForm from "./_components/ReportActionForm";
-import PostActionButtons from "./_components/PostActionButtons";
+import { updateCommentReportStatus } from "@/lib/actions/admin";
+import { ReportReason, ReportStatus } from "@prisma/client";
+import CommentReportActionForm from "./_components/CommentReportActionForm";
+import CommentActionButtons from "./_components/CommentActionButtons";
 import UserBanSection from "@/app/admin/_components/UserBanSection";
 
 const REASON_LABEL: Record<ReportReason, string> = {
@@ -37,18 +37,7 @@ function adminDisplayName(user: { nickname: string | null; name: string | null; 
   return { name: "탈퇴한 유저", email: null, retained: false };
 }
 
-const ACTION_LABEL: Record<AdminActionType, string> = {
-  DELETE_POST: "게시글 삭제",
-  RESTORE_POST: "게시글 복구",
-  RESOLVE_REPORT: "신고 처리완료",
-  REJECT_REPORT: "신고 반려",
-  BAN_USER: "사용자 제재",
-  UNBAN_USER: "제재 해제",
-  APPROVE_USER: "인증 승인",
-  REJECT_USER: "인증 거절",
-};
-
-export default async function AdminReportDetailPage({
+export default async function AdminCommentReportDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -58,23 +47,20 @@ export default async function AdminReportDetailPage({
 
   const { id } = await params;
 
-  const report = await prisma.report.findUnique({
+  const report = await prisma.commentReport.findUnique({
     where: { id },
     include: {
       reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
-      post: {
+      comment: {
         select: {
           id: true,
-          title: true,
           content: true,
           deletedAt: true,
+          parentId: true,
+          postId: true,
+          createdAt: true,
           author: { select: { id: true, nickname: true, name: true, email: true, retainUntil: true, isBanned: true, bannedUntil: true } },
-        },
-      },
-      adminActions: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          admin: { select: { nickname: true, name: true } },
+          post: { select: { id: true, title: true } },
         },
       },
     },
@@ -82,23 +68,24 @@ export default async function AdminReportDetailPage({
 
   if (!report) notFound();
 
-  const action = updateReportStatus.bind(null, id);
+  const action = updateCommentReportStatus.bind(null, id);
+  const commentType = report.comment.parentId ? "답글" : "댓글";
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">
       <div>
         <Link
-          href="/admin/reports"
+          href="/admin/comment-reports"
           className="text-sm text-muted-foreground hover:text-primary-base transition-colors"
         >
-          ← 신고 목록
+          ← 댓글 신고 목록
         </Link>
       </div>
 
       {/* 신고 정보 */}
       <section className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="font-bold">신고 상세</h1>
+          <h1 className="font-bold">{commentType} 신고 상세</h1>
           <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_BADGE[report.status]}`}>
             {STATUS_LABEL[report.status]}
           </span>
@@ -121,46 +108,53 @@ export default async function AdminReportDetailPage({
         </dl>
       </section>
 
-      {/* 게시글 정보 */}
+      {/* 댓글 정보 */}
       <section className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-3">
-        <h2 className="font-bold text-sm">신고 대상 게시글</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-bold text-sm">신고 대상 {commentType}</h2>
+          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${report.comment.parentId ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+            {commentType}
+          </span>
+        </div>
+
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">제목</dt>
+          <dt className="text-muted-foreground">게시글</dt>
           <dd>
-            {report.post.deletedAt ? (
-              <span className="line-through text-muted-foreground">{report.post.title} (삭제됨)</span>
-            ) : (
-              <Link href={`/posts/${report.post.id}`} className="text-primary-base hover:underline">
-                {report.post.title}
-              </Link>
-            )}
+            <Link href={`/posts/${report.comment.post.id}`} className="text-primary-base hover:underline">
+              {report.comment.post.title}
+            </Link>
           </dd>
 
           <dt className="text-muted-foreground">작성자</dt>
           <dd>
-            {(() => { const d = adminDisplayName(report.post.author); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
+            {(() => { const d = adminDisplayName(report.comment.author); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
           </dd>
 
+          <dt className="text-muted-foreground">작성일</dt>
+          <dd>{report.comment.createdAt.toLocaleDateString("ko-KR")}</dd>
+
           <dt className="text-muted-foreground">내용</dt>
-          <dd className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
-            {report.post.content.slice(0, 200)}
-            {report.post.content.length > 200 && "..."}
+          <dd className="whitespace-pre-wrap text-xs leading-relaxed">
+            {report.comment.content}
+            {report.comment.deletedAt && (
+              <span className="ml-2 text-[10px] text-red-500 border border-red-300 px-1 rounded align-middle">삭제됨</span>
+            )}
           </dd>
         </dl>
       </section>
 
-      {/* 게시글 숨김/복구 */}
+      {/* 댓글 삭제 처리 */}
       <section className="bg-card border border-border-base rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-sm">게시글 처리</h2>
-          <span className={`text-xs px-2 py-0.5 rounded font-medium ${report.post.deletedAt ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
-            {report.post.deletedAt ? "숨김" : "게시 중"}
+          <h2 className="font-bold text-sm">{commentType} 처리</h2>
+          <span className={`text-xs px-2 py-0.5 rounded font-medium ${report.comment.deletedAt ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
+            {report.comment.deletedAt ? "삭제됨" : "게시 중"}
           </span>
         </div>
-        <PostActionButtons
-          reportId={report.id}
-          postId={report.post.id}
-          isHidden={!!report.post.deletedAt}
+        <CommentActionButtons
+          commentReportId={report.id}
+          commentId={report.comment.id}
+          isDeleted={!!report.comment.deletedAt}
         />
       </section>
 
@@ -168,44 +162,21 @@ export default async function AdminReportDetailPage({
       <section className="bg-card border border-border-base rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold text-sm">작성자 제재</h2>
-          {(() => { const d = adminDisplayName(report.post.author); return <span className="text-xs text-muted-foreground">{d.name}</span>; })()}
+          {(() => { const d = adminDisplayName(report.comment.author); return <span className="text-xs text-muted-foreground">{d.name}</span>; })()}
         </div>
         <UserBanSection
-          userId={report.post.author.id}
-          isBanned={report.post.author.isBanned}
-          bannedUntil={report.post.author.bannedUntil}
-          returnPath={`/admin/reports/${report.id}`}
+          userId={report.comment.author.id}
+          isBanned={report.comment.author.isBanned}
+          bannedUntil={report.comment.author.bannedUntil}
+          returnPath={`/admin/comment-reports/${report.id}`}
         />
       </section>
 
-      {/* 신고 상태 변경 폼 */}
+      {/* 신고 상태 변경 */}
       <section className="bg-card border border-border-base rounded-xl p-6">
         <h2 className="font-bold text-sm mb-4">신고 처리</h2>
-        <ReportActionForm action={action} currentStatus={report.status} />
+        <CommentReportActionForm action={action} currentStatus={report.status} />
       </section>
-
-      {/* 처리 이력 */}
-      {report.adminActions.length > 0 && (
-        <section className="bg-card border border-border-base rounded-xl p-6">
-          <h2 className="font-bold text-sm mb-4">처리 이력</h2>
-          <ul className="flex flex-col gap-3">
-            {report.adminActions.map((log) => (
-              <li key={log.id} className="text-sm flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{ACTION_LABEL[log.actionType]}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {log.admin.nickname ?? log.admin.name} ·{" "}
-                    {log.createdAt.toLocaleDateString("ko-KR")}
-                  </span>
-                </div>
-                {log.note && (
-                  <p className="text-xs text-muted-foreground pl-1">{log.note}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { notifyNewComment } from "@/lib/notifications";
+import { checkAndExpireBan } from "@/lib/ban";
 
 export type CommentState = {
   error?: string;
@@ -19,6 +20,11 @@ export async function createComment(
 ): Promise<CommentState> {
   const session = await auth();
   if (!session) redirect("/login");
+
+  if (session.user.role === "TEMP") return { error: "본캐 인증 후 이용할 수 있습니다." };
+
+  const banMessage = await checkAndExpireBan(session.user.id);
+  if (banMessage) return { error: banMessage };
 
   const content = (formData.get("content") as string).trim();
 

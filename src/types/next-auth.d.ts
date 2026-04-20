@@ -5,14 +5,14 @@ declare module "next-auth" {
     user: {
       id: string;
       publicId: string;
-      role: "USER" | "ADMIN";
+      role: "TEMP" | "USER" | "ADMIN";
       nickname: string | null;
     };
   }
 
   interface User {
     publicId?: string;
-    role?: "USER" | "ADMIN";
+    role?: "TEMP" | "USER" | "ADMIN";
     nickname?: string | null;
   }
 }

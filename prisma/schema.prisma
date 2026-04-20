@@ -11,8 +11,9 @@ datasource db {
 // ───────────────────────────────────────────
 
 enum Role {
-  USER
-  ADMIN
+  TEMP  // 미인증 (읽기 전용)
+  USER  // 인증 완료
+  ADMIN // 관리자
 }
 
 enum PostCategory {
@@ -31,6 +32,7 @@ enum ReportReason {
   FRAUD         // 사기
   FALSE_INFO    // 허위 정보
   INAPPROPRIATE // 부적절한 내용
+  IMPERSONATION // 타인 사칭
   OTHER         // 기타
 }
 
@@ -46,7 +48,10 @@ enum AdminActionType {
   RESTORE_POST   // 게시글 복구
   RESOLVE_REPORT // 신고 처리 완료
   REJECT_REPORT  // 신고 반려
-  BAN_USER       // 사용자 제재 (추후 확장)
+  BAN_USER       // 사용자 제재
+  UNBAN_USER     // 제재 해제
+  APPROVE_USER   // 인증 승인
+  REJECT_USER    // 인증 거절
 }
 
 enum NotificationType {
@@ -67,17 +72,21 @@ model User {
   emailVerified DateTime?
   image         String?
   nickname      String?   @unique
-  role          Role      @default(USER)
+  role          Role      @default(TEMP)
   createdAt     DateTime  @default(now())
   deletedAt     DateTime?
   retainUntil   DateTime?
+  isBanned      Boolean   @default(false)
+  bannedUntil   DateTime?
 
-  accounts     Account[]
-  sessions     Session[]
-  posts        Post[]
-  comments     Comment[]
-  reports      Report[]      @relation("Reporter")
-  adminActions AdminAction[]
+  accounts        Account[]
+  sessions        Session[]
+  posts           Post[]
+  comments        Comment[]
+  reports         Report[]         @relation("Reporter")
+  commentReports  CommentReport[]  @relation("CommentReporter")
+  adminActions    AdminAction[]    @relation("AdminActionPerformer")
+  sanctionActions AdminAction[]    @relation("AdminActionTarget")
 
   notificationsReceived Notification[]      @relation("NotificationReceiver")
   notificationsActed    Notification[]      @relation("NotificationActor")
@@ -183,6 +192,7 @@ model Comment {
   parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id])
   replies       Comment[]      @relation("CommentReplies")
   notifications Notification[]
+  reports       CommentReport[]
 
   @@index([postId])
   @@index([parentId])
@@ -215,16 +225,19 @@ model AdminAction {
   note       String?
   createdAt  DateTime        @default(now())
 
-  postId   Int?
-  reportId String?
+  postId       Int?
+  reportId     String?
+  targetUserId String?
 
-  admin  User    @relation(fields: [adminId], references: [id])
-  post   Post?   @relation(fields: [postId], references: [id])
-  report Report? @relation(fields: [reportId], references: [id])
+  admin      User    @relation("AdminActionPerformer", fields: [adminId], references: [id])
+  post       Post?   @relation(fields: [postId], references: [id])
+  report     Report? @relation(fields: [reportId], references: [id])
+  targetUser User?   @relation("AdminActionTarget", fields: [targetUserId], references: [id])
 
   @@index([adminId])
   @@index([postId])
   @@index([reportId])
+  @@index([targetUserId])
   @@map("admin_actions")
 }
 
@@ -263,4 +276,29 @@ model NotificationKeyword {
   @@unique([userId, keyword])
   @@index([isEnabled])
   @@map("notification_keywords")
+}
+
+model TempNicknameSeq {
+  id  Int @id @default(1)
+  seq Int @default(0)
+
+  @@map("temp_nickname_seq")
+}
+
+model CommentReport {
+  id         String       @id @default(cuid())
+  reporterId String
+  commentId  String
+  reason     ReportReason
+  detail     String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  reporter User    @relation("CommentReporter", fields: [reporterId], references: [id])
+  comment  Comment @relation(fields: [commentId], references: [id])
+
+  @@unique([reporterId, commentId])
+  @@index([commentId])
+  @@index([status])
+  @@map("comment_reports")
 }

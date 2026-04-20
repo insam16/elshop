@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useTransition, useRef, useState, useEffect } from "react";
 import { createComment, deleteComment, type CommentState } from "@/lib/actions/comment";
 import { formatDate } from "@/lib/utils/date";
+import CommentReportModal from "@/app/posts/_components/CommentReportModal";
 
 type Author = { id: string; publicId: string; nickname: string | null; name: string | null };
 
@@ -140,6 +141,9 @@ function CommentItem({
                 {isReplyOpen ? "취소" : "답글"}
               </button>
             )}
+            {currentUserId && currentUserId !== comment.author.id && (
+              <CommentReportModal commentId={comment.id} type="댓글" />
+            )}
             {canDelete && (
               <button
                 onClick={handleDelete}
@@ -207,15 +211,20 @@ function ReplyItem({
           <AuthorLink author={reply.author} />
           <span>{formatDate(reply.createdAt)}</span>
         </div>
-        {canDelete && (
-          <button
-            onClick={handleDelete}
-            disabled={isPending}
-            className="text-xs text-muted-foreground hover:text-red-500 disabled:opacity-50 transition-colors"
-          >
-            삭제
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {currentUserId && currentUserId !== reply.author.id && (
+            <CommentReportModal commentId={reply.id} type="답글" />
+          )}
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="text-xs text-muted-foreground hover:text-red-500 disabled:opacity-50 transition-colors"
+            >
+              삭제
+            </button>
+          )}
+        </div>
       </div>
       <p className="text-sm leading-relaxed whitespace-pre-wrap">{reply.content}</p>
     </li>

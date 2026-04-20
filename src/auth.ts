@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, user }) {
       session.user.id = user.id;
       session.user.publicId = user.publicId ?? "";
-      session.user.role = (user.role ?? "USER") as "USER" | "ADMIN";
+      session.user.role = (user.role ?? "TEMP") as "TEMP" | "USER" | "ADMIN";
       session.user.nickname = user.nickname ?? null;
       return session;
     },

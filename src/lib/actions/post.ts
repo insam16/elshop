@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { validatePost } from "@/lib/validators/post";
 import { PostCategory, PostStatus } from "@prisma/client";
 import { notifyNewPost } from "@/lib/notifications";
+import { checkAndExpireBan } from "@/lib/ban";
 
 export type ActionState = {
   errors?: {
@@ -26,6 +27,11 @@ export async function createPost(
 ): Promise<ActionState> {
   const session = await auth();
   if (!session) redirect("/login");
+
+  if (session.user.role === "TEMP") return { errors: { general: "본캐 인증 후 이용할 수 있습니다." } };
+
+  const banMessage = await checkAndExpireBan(session.user.id);
+  if (banMessage) return { errors: { general: banMessage } };
 
   const titleRaw = formData.get("title");
   const contentRaw = formData.get("content");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { createReport, type ReportState } from "@/lib/actions/report";
+import { createCommentReport, type CommentReportState } from "@/lib/actions/report";
 import { ReportReason } from "@prisma/client";
 
 const REASON_LABEL: Record<ReportReason, string> = {
@@ -12,11 +12,17 @@ const REASON_LABEL: Record<ReportReason, string> = {
   OTHER: "기타",
 };
 
-export default function ReportModal({ postId }: { postId: number }) {
+export default function CommentReportModal({
+  commentId,
+  type = "댓글",
+}: {
+  commentId: string;
+  type?: "댓글" | "답글";
+}) {
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [state, formAction, isPending] = useActionState<ReportState, FormData>(
-    createReport,
+  const [state, formAction, isPending] = useActionState<CommentReportState, FormData>(
+    createCommentReport,
     {}
   );
 
@@ -25,7 +31,6 @@ export default function ReportModal({ postId }: { postId: number }) {
     else dialogRef.current?.close();
   }, [open]);
 
-  // 성공 시 자동 닫기
   useEffect(() => {
     if (state.success) {
       const t = setTimeout(() => setOpen(false), 1200);
@@ -37,7 +42,7 @@ export default function ReportModal({ postId }: { postId: number }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-sm text-red-500 hover:text-red-600 border border-red-500/30 px-3 py-1 rounded transition-colors"
+        className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
       >
         신고
       </button>
@@ -48,24 +53,14 @@ export default function ReportModal({ postId }: { postId: number }) {
         className="fixed inset-0 m-auto h-fit rounded-xl border border-border-base bg-card p-6 w-[calc(100%-2rem)] max-w-sm shadow-xl backdrop:bg-black/40 animate-in fade-in zoom-in duration-200 text-foreground"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold">게시글 신고</h2>
+          <h2 className="text-base font-bold">{type} 신고</h2>
           <button
             onClick={() => setOpen(false)}
             className="p-1 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
             title="닫기"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -76,7 +71,7 @@ export default function ReportModal({ postId }: { postId: number }) {
           </p>
         ) : (
           <form action={formAction} className="flex flex-col gap-4">
-            <input type="hidden" name="postId" value={postId} />
+            <input type="hidden" name="commentId" value={commentId} />
 
             {state.error && (
               <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">
@@ -84,7 +79,6 @@ export default function ReportModal({ postId }: { postId: number }) {
               </p>
             )}
 
-            {/* 신고 사유 */}
             <div>
               <label className="block text-sm font-medium mb-1">신고 사유</label>
               <select
@@ -100,7 +94,6 @@ export default function ReportModal({ postId }: { postId: number }) {
               </select>
             </div>
 
-            {/* 상세 설명 */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 상세 설명 <span className="text-muted-foreground font-normal">(선택)</span>
