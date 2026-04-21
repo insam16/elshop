@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_LABEL, STATUS_LABEL } from "@/lib/validators/post";
 import { PostCategory, PostStatus } from "@prisma/client";
@@ -64,6 +66,10 @@ export default async function PostsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const session = await auth();
+  if (!session) redirect("/login");
+  if (session.user.role === "TEMP") redirect("/account");
+
   const { q: rawQ, category, status, page: pageParam, showAllPremium } = await searchParams;
   const q = rawQ?.slice(0, 20);
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
@@ -212,8 +218,8 @@ export default async function PostsPage({
                     href={paginationHref(page - 1)}
                     aria-disabled={page <= 1}
                     className={`px-3 py-1.5 rounded text-sm border transition-colors ${page <= 1
-                        ? "pointer-events-none border-border-base text-muted-foreground opacity-40"
-                        : "border-border-base hover:bg-muted"
+                      ? "pointer-events-none border-border-base text-muted-foreground opacity-40"
+                      : "border-border-base hover:bg-muted"
                       }`}
                   >
                     ←
@@ -240,8 +246,8 @@ export default async function PostsPage({
                           key={item}
                           href={paginationHref(item as number)}
                           className={`px-3 py-1.5 rounded text-sm border transition-colors ${page === item
-                              ? "bg-primary-base text-primary-foreground border-primary-base"
-                              : "border-border-base hover:bg-muted"
+                            ? "bg-primary-base text-primary-foreground border-primary-base"
+                            : "border-border-base hover:bg-muted"
                             }`}
                         >
                           {item}
@@ -252,8 +258,8 @@ export default async function PostsPage({
                     href={paginationHref(page + 1)}
                     aria-disabled={page >= totalPages}
                     className={`px-3 py-1.5 rounded text-sm border transition-colors ${page >= totalPages
-                        ? "pointer-events-none border-border-base text-muted-foreground opacity-40"
-                        : "border-border-base hover:bg-muted"
+                      ? "pointer-events-none border-border-base text-muted-foreground opacity-40"
+                      : "border-border-base hover:bg-muted"
                       }`}
                   >
                     →
@@ -285,8 +291,8 @@ function PostRow({ post, premium }: PostRowProps) {
   return (
     <div
       className={`flex items-center justify-between border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${premium
-          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-          : "bg-card border-border-base"
+        ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
+        : "bg-card border-border-base"
         }`}
     >
       <Link href={`/posts/${post.id}`} className="flex items-center gap-2 min-w-0 flex-1">
@@ -295,11 +301,11 @@ function PostRow({ post, premium }: PostRowProps) {
             프리미엄
           </span>
         )}
-        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${CATEGORY_BADGE[post.category]}`}>
-          {CATEGORY_LABEL[post.category]}
-        </span>
         <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${STATUS_BADGE[post.status]}`}>
           {STATUS_LABEL[post.status]}
+        </span>
+        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${CATEGORY_BADGE[post.category]}`}>
+          {CATEGORY_LABEL[post.category]}
         </span>
         <span className="text-sm font-medium truncate">{post.title}</span>
         {post._count.comments > 0 && (

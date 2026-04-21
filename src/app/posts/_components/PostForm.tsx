@@ -39,25 +39,6 @@ export default function PostForm({ action, defaultValues, submitLabel = "작성 
           </p>
         )}
 
-        {/* 거래 종류 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">거래 종류</label>
-          <select
-            name="category"
-            defaultValue={defaultValues?.category ?? "SELL"}
-            className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
-          >
-            {Object.values(PostCategory).map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABEL[c]}
-              </option>
-            ))}
-          </select>
-          {state.errors?.category && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.category}</p>
-          )}
-        </div>
-
         {/* 거래 상태 */}
         <div>
           <label className="block text-sm font-medium mb-1">거래 상태</label>
@@ -74,6 +55,25 @@ export default function PostForm({ action, defaultValues, submitLabel = "작성 
           </select>
           {state.errors?.status && (
             <p className="text-xs text-red-500 mt-1">{state.errors.status}</p>
+          )}
+        </div>
+
+        {/* 거래 종류 */}
+        <div>
+          <label className="block text-sm font-medium mb-1">거래 종류</label>
+          <select
+            name="category"
+            defaultValue={defaultValues?.category ?? "SELL"}
+            className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+          >
+            {Object.values(PostCategory).map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+          {state.errors?.category && (
+            <p className="text-xs text-red-500 mt-1">{state.errors.category}</p>
           )}
         </div>
 

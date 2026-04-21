@@ -2,12 +2,17 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { AdminActionType, ReportStatus } from "@prisma/client";
+import { AdminActionType, NotificationType, ReportStatus } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 export type AdminActionState = {
   error?: string;
+  conflict?: {
+    nickname: string;
+    conflictUserId: string;
+    conflictNickname: string;
+  };
 };
 
 const LOGGABLE_STATUS: Partial<Record<ReportStatus, AdminActionType>> = {
@@ -129,8 +134,60 @@ export async function approveUser(
   if (!user) return { error: "유저를 찾을 수 없습니다." };
   if (user.role !== "TEMP") return { error: "인증 대기 중인 유저가 아닙니다." };
 
-  const existing = await prisma.user.findUnique({ where: { nickname: characterName } });
-  if (existing) return { error: "이미 사용 중인 닉네임입니다. 다른 캐릭터명을 입력해주세요." };
+  const force = formData.get("force") === "true";
+  const existing = await prisma.user.findUnique({
+    where: { nickname: characterName },
+    select: { id: true, nickname: true },
+  });
+
+  if (existing && !force) {
+    return {
+      conflict: {
+        nickname: characterName,
+        conflictUserId: existing.id,
+        conflictNickname: existing.nickname!,
+      },
+    };
+  }
+
+  if (existing && force) {
+    // 기존 닉네임 보유자를 임시 닉네임으로 변경 후 알림
+    const counter = await prisma.tempNicknameSeq.upsert({
+      where: { id: 2 },
+      update: { seq: { increment: 1 } },
+      create: { id: 2, seq: 1 },
+    });
+    const tempNickname = `닉변#${String(counter.seq).padStart(4, "0")}`;
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: existing.id },
+        data: { nickname: tempNickname, role: "TEMP" },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: existing.id,
+          actorUserId: session.user.id,
+          type: NotificationType.NICKNAME_CHANGED,
+          title: "닉네임이 변경되었습니다",
+          body: `게임 닉네임 소유자 변경으로 인해 닉네임이 임시 닉네임으로 변경되었습니다. 새 닉네임으로 재인증해주세요.`,
+          link: "/account",
+        },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { nickname: characterName, role: "USER" },
+      }),
+      prisma.adminAction.create({
+        data: {
+          adminId: session.user.id,
+          actionType: AdminActionType.APPROVE_USER,
+          targetUserId: userId,
+          note: `캐릭터명: ${characterName} (기존 보유자 닉네임 강제 변경)`,
+        },
+      }),
+    ]);
+    redirect(returnPath);
+  }
 
   await prisma.$transaction([
     prisma.user.update({

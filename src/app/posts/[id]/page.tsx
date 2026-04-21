@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_LABEL, STATUS_LABEL } from "@/lib/validators/post";
@@ -13,34 +13,35 @@ export default async function PostDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session) redirect("/login");
+  if (session.user.role === "TEMP") redirect("/account");
+
   const { id: idStr } = await params;
   const id = parseInt(idStr, 10);
   if (isNaN(id)) notFound();
-  const [post, session] = await Promise.all([
-    prisma.post.findUnique({
-      where: { id, deletedAt: null },
-      include: {
-        author: { select: { id: true, publicId: true, nickname: true, name: true } },
-        comments: {
-          where: { deletedAt: null, parentId: null },
-          orderBy: { createdAt: "asc" },
-          include: {
-            author: { select: { id: true, publicId: true, nickname: true, name: true } },
-            replies: {
-              where: { deletedAt: null },
-              orderBy: { createdAt: "asc" },
-              include: { author: { select: { id: true, publicId: true, nickname: true, name: true } } },
-            },
+  const post = await prisma.post.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      author: { select: { id: true, publicId: true, nickname: true, name: true } },
+      comments: {
+        where: { deletedAt: null, parentId: null },
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, publicId: true, nickname: true, name: true } },
+          replies: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: "asc" },
+            include: { author: { select: { id: true, publicId: true, nickname: true, name: true } } },
           },
         },
       },
-    }),
-    auth(),
-  ]);
+    },
+  });
 
   if (!post) notFound();
 
-  const isAuthor = session?.user.id === post.author.id;
+  const isAuthor = session.user.id === post.author.id;
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
@@ -53,11 +54,11 @@ export default async function PostDetailPage({
       <div className="bg-card border border-border-base rounded-xl p-6">
         {/* 뱃지 + 제목 */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
-            {CATEGORY_LABEL[post.category]}
-          </span>
           <span className="text-xs bg-primary-base/10 text-primary-base px-2 py-0.5 rounded">
             {STATUS_LABEL[post.status]}
+          </span>
+          <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
+            {CATEGORY_LABEL[post.category]}
           </span>
           <h1 className="text-xl font-bold">{post.title}</h1>
         </div>

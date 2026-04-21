@@ -58,6 +58,7 @@ enum NotificationType {
   COMMENT_ON_MY_POST   // 내 게시글에 댓글
   REPLY_TO_MY_COMMENT  // 내 댓글에 답글
   KEYWORD_MATCH        // 키워드 알림
+  NICKNAME_CHANGED     // 닉네임 강제 변경 (게임 닉네임 소유자 변경)
 }
 
 // ───────────────────────────────────────────

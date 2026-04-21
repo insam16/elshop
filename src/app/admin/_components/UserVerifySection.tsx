@@ -1,17 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { approveUser, rejectUser, type AdminActionState } from "@/lib/actions/admin";
 
 type Props = {
   userId: string;
   returnPath: string;
-  rejectCount: number; // 이전 거절 횟수
+  rejectCount: number;
 };
 
 export default function UserVerifySection({ userId, returnPath, rejectCount }: Props) {
   const [approveState, approveAction, isApprovePending] = useActionState<AdminActionState, FormData>(approveUser, {});
   const [rejectState, rejectAction, isRejectPending] = useActionState<AdminActionState, FormData>(rejectUser, {});
+  const [characterName, setCharacterName] = useState("");
+
+  const conflict = approveState.conflict;
 
   return (
     <div className="flex flex-col gap-4">
@@ -23,6 +26,7 @@ export default function UserVerifySection({ userId, returnPath, rejectCount }: P
       <form action={approveAction} className="flex flex-col gap-3">
         <input type="hidden" name="userId" value={userId} />
         <input type="hidden" name="returnPath" value={returnPath} />
+        <input type="hidden" name="force" value="false" />
         {approveState.error && (
           <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{approveState.error}</p>
         )}
@@ -33,6 +37,8 @@ export default function UserVerifySection({ userId, returnPath, rejectCount }: P
             name="characterName"
             maxLength={20}
             placeholder="인게임 캐릭터명"
+            value={characterName}
+            onChange={(e) => setCharacterName(e.target.value)}
             className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base"
           />
         </div>
@@ -46,6 +52,30 @@ export default function UserVerifySection({ userId, returnPath, rejectCount }: P
           </button>
         </div>
       </form>
+
+      {/* 닉네임 충돌 경고 */}
+      {conflict && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex flex-col gap-3">
+          <p className="text-sm font-semibold text-amber-800">닉네임 충돌 확인 필요</p>
+          <p className="text-sm text-amber-700">
+            <strong>{conflict.conflictNickname}</strong> 닉네임은 현재 다른 유저가 사용 중입니다.
+            강제 승인 시 해당 유저의 닉네임이 임시 닉네임으로 변경되고 알림이 전송됩니다.
+          </p>
+          <form action={approveAction} className="flex justify-end">
+            <input type="hidden" name="userId" value={userId} />
+            <input type="hidden" name="returnPath" value={returnPath} />
+            <input type="hidden" name="characterName" value={conflict.nickname} />
+            <input type="hidden" name="force" value="true" />
+            <button
+              type="submit"
+              disabled={isApprovePending}
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            >
+              {isApprovePending ? "처리 중..." : "강제 승인"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* 거절 폼 */}
       <form action={rejectAction} className="flex flex-col gap-3 border-t border-border-base pt-4">

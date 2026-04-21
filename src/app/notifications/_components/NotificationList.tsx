@@ -10,6 +10,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   COMMENT_ON_MY_POST: "댓글",
   REPLY_TO_MY_COMMENT: "답글",
   KEYWORD_MATCH: "키워드",
+  NICKNAME_CHANGED: "닉네임",
 };
 
 type Notification = {

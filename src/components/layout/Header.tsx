@@ -1,13 +1,26 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { getUnreadCount } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
 
 export default async function Header() {
   const session = await auth();
   const unreadCount = session ? await getUnreadCount(session.user.id) : 0;
 
+  let adminNotifications = 0;
+  if (session?.user.role === "ADMIN") {
+    const [pendingReports, pendingCommentReports, pendingVerifications] =
+      await Promise.all([
+        prisma.report.count({ where: { status: "PENDING" } }),
+        prisma.commentReport.count({ where: { status: "PENDING" } }),
+        prisma.user.count({ where: { role: "TEMP" } }),
+      ]);
+    adminNotifications =
+      pendingReports + pendingCommentReports + pendingVerifications;
+  }
+
   return (
-    <header className="border-b border-border-base bg-card">
+    <header className="border-b border-border-base bg-card text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-bold text-base hover:text-primary-base transition-colors">
           엘샵
@@ -39,6 +52,18 @@ export default async function Header() {
               >
                 {session.user.nickname ?? "?"}
               </Link>
+              {session.user.role === "ADMIN" && (
+                <Link
+                  href="/admin/reports"
+                  title="관리자 알림"
+                >
+                  {adminNotifications > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 min-w-[18px] h-4 flex items-center justify-center rounded-full leading-none">
+                      {adminNotifications > 99 ? "99+" : adminNotifications}
+                    </span>
+                  )}
+                </Link>
+              )}
             </>
           ) : (
             <Link href="/login" className="hover:text-primary-base transition-colors">

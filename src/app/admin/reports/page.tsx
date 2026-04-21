@@ -7,10 +7,9 @@ import AnonymizeButton from "./_components/AnonymizeButton";
 
 const PAGE_SIZE = 20;
 
-function adminDisplayName(user: { nickname: string | null; name: string | null; email: string | null; retainUntil: Date | null }) {
-  const hasData = user.nickname !== null || user.name !== null;
+function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
   const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (hasData) return { name: user.nickname ?? user.name ?? "(닉네임 없음)", email: user.email, retained };
+  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
   return { name: "탈퇴한 유저", email: null, retained: false };
 }
 
@@ -53,13 +52,13 @@ export default async function AdminReportsPage({
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
-        reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
+        reporter: { select: { nickname: true, email: true, retainUntil: true } },
         post: {
           select: {
             id: true,
             title: true,
             deletedAt: true,
-            author: { select: { nickname: true, name: true, email: true, retainUntil: true } },
+            author: { select: { nickname: true, email: true, retainUntil: true } },
           },
         },
       },
@@ -72,7 +71,7 @@ export default async function AdminReportsPage({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold">신고 목록 (관리자)</h1>
+        <h1 className="text-xl font-bold">게시글 신고 목록</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">총 {total}건</span>
           <AnonymizeButton />
@@ -193,11 +192,10 @@ function PaginationLink({
   return (
     <Link
       href={href}
-      className={`px-3 py-1.5 text-sm rounded transition-colors ${
-        active
-          ? "bg-primary-base text-primary-foreground font-medium"
-          : "border border-border-base hover:bg-muted"
-      }`}
+      className={`px-3 py-1.5 text-sm rounded transition-colors ${active
+        ? "bg-primary-base text-primary-foreground font-medium"
+        : "border border-border-base hover:bg-muted"
+        }`}
     >
       {children}
     </Link>

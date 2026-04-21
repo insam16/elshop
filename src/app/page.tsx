@@ -26,10 +26,10 @@ export default function HomePage() {
           <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
           </svg>
-          <p className="text-sm font-semibold text-amber-800">사기 예방 가이드</p>
+          <p className="text-sm font-semibold text-amber-800">사기 피해 예방을 위한 가이드</p>
         </div>
         <ul className="text-xs text-amber-700 space-y-1.5 list-disc list-inside">
-          <li>거래 전 상대방의 <strong>본캐 인증 여부</strong>를 확인하세요.</li>
+          <li>게시글에 계좌번호, 전화번호 등 개인정보를 직접 노출하지 마세요.</li>
           <li>댓글 없이 다른 수단으로 거래를 시도하는 이용자를 각별히 주의하세요.</li>
           <li>의심스러운 거래 상대는 <strong>신고</strong> 기능을 이용해주세요.</li>
           <li>피해 발생 시 거래 내역을 캡처해 두세요.</li>
@@ -54,12 +54,12 @@ export default function HomePage() {
         <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
           <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
           <a
-            href="https://forms.gle/wcEjVs11Djt1uU74A"
+            href="https://naver.me/GsB4618H"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
           >
-            버그 신고 / 기능 요청 (구글폼)
+            버그 신고 / 기능 요청 (네이버폼)
           </a>
           <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

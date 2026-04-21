@@ -30,10 +30,9 @@ const STATUS_BADGE: Record<ReportStatus, string> = {
   REJECTED: "bg-gray-100 text-gray-500",
 };
 
-function adminDisplayName(user: { nickname: string | null; name: string | null; email: string | null; retainUntil: Date | null }) {
-  const hasData = user.nickname !== null || user.name !== null;
+function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
   const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (hasData) return { name: user.nickname ?? user.name ?? "(닉네임 없음)", email: user.email, retained };
+  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
   return { name: "탈퇴한 유저", email: null, retained: false };
 }
 
@@ -61,20 +60,20 @@ export default async function AdminReportDetailPage({
   const report = await prisma.report.findUnique({
     where: { id },
     include: {
-      reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
+      reporter: { select: { nickname: true, email: true, retainUntil: true } },
       post: {
         select: {
           id: true,
           title: true,
           content: true,
           deletedAt: true,
-          author: { select: { id: true, nickname: true, name: true, email: true, retainUntil: true, isBanned: true, bannedUntil: true } },
+          author: { select: { id: true, nickname: true, email: true, retainUntil: true, isBanned: true, bannedUntil: true } },
         },
       },
       adminActions: {
         orderBy: { createdAt: "desc" },
         include: {
-          admin: { select: { nickname: true, name: true } },
+          admin: { select: { nickname: true } },
         },
       },
     },
@@ -194,7 +193,7 @@ export default async function AdminReportDetailPage({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{ACTION_LABEL[log.actionType]}</span>
                   <span className="text-xs text-muted-foreground">
-                    {log.admin.nickname ?? log.admin.name} ·{" "}
+                    {log.admin.nickname} ·{" "}
                     {log.createdAt.toLocaleDateString("ko-KR")}
                   </span>
                 </div>

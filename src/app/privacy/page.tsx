@@ -3,10 +3,10 @@ export const metadata = { title: "개인정보처리방침 | 엘샵" };
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto">
-      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 18일">
+      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 21일">
 
         <Section title="1. 수집하는 개인정보">
-          <p className="mb-2">서비스는 네이버 소셜 로그인을 통해 다음 정보를 수집합니다.</p>
+          <p className="mb-2">서비스는 다음 정보를 수집합니다.</p>
           <table className="w-full text-xs border border-border-base rounded-lg overflow-hidden">
             <thead className="bg-muted">
               <tr>
@@ -22,7 +22,12 @@ export default function PrivacyPage() {
                 <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
               </tr>
               <tr>
-                <td className="px-3 py-2">닉네임 (직접 입력)</td>
+                <td className="px-3 py-2">생년월일</td>
+                <td className="px-3 py-2">연령 확인 (미성년자 가입 차단)</td>
+                <td className="px-3 py-2">확인 후 즉시 폐기 (저장 안 함)</td>
+              </tr>
+              <tr>
+                <td className="px-3 py-2">엘소드 닉네임</td>
                 <td className="px-3 py-2">게시판 활동</td>
                 <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
               </tr>
@@ -102,10 +107,10 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="8. 14세 미만 이용 제한">
+        <Section title="8. 미성년자 이용 제한">
           <p>
-            서비스는 14세 미만 아동의 개인정보를 수집하지 않으며, 14세 미만은 서비스를 이용할 수 없습니다.
-            14세 미만으로 확인된 경우 즉시 계정이 삭제됩니다.
+            서비스는 만 19세 미만 미성년자의 개인정보를 수집하지 않으며, 미성년자는 서비스를 이용할 수 없습니다.
+            로그인 시 네이버 계정의 생년월일로 연령을 확인하며, 미성년자로 확인된 경우 가입이 차단됩니다.
           </p>
         </Section>
 

@@ -25,7 +25,7 @@ export default function SearchFilter() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   function push(params: { q: string; category: string; status: string }) {
@@ -63,19 +63,6 @@ export default function SearchFilter() {
         className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
       />
 
-      {/* 거래종류 필터 */}
-      <div className="flex gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground self-center">종류</span>
-        {Object.values(PostCategory).map((c) => (
-          <FilterChip
-            key={c}
-            label={CATEGORY_LABEL[c]}
-            active={currentCategory === c}
-            onClick={() => toggleCategory(c)}
-          />
-        ))}
-      </div>
-
       {/* 거래상태 필터 */}
       <div className="flex gap-2 flex-wrap">
         <span className="text-xs text-muted-foreground self-center">상태</span>
@@ -85,6 +72,19 @@ export default function SearchFilter() {
             label={STATUS_LABEL[s]}
             active={currentStatus === s}
             onClick={() => toggleStatus(s)}
+          />
+        ))}
+      </div>
+
+      {/* 거래종류 필터 */}
+      <div className="flex gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground self-center">종류</span>
+        {Object.values(PostCategory).map((c) => (
+          <FilterChip
+            key={c}
+            label={CATEGORY_LABEL[c]}
+            active={currentCategory === c}
+            onClick={() => toggleCategory(c)}
           />
         ))}
       </div>
@@ -105,11 +105,10 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-        active
+      className={`text-xs px-3 py-1 rounded-full border transition-colors ${active
           ? "bg-primary-base text-primary-foreground border-primary-base"
           : "bg-card text-muted-foreground border-border-base hover:border-primary-base"
-      }`}
+        }`}
     >
       {label}
     </button>

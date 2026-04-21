@@ -6,10 +6,9 @@ import { ReportReason, ReportStatus } from "@prisma/client";
 
 const PAGE_SIZE = 20;
 
-function adminDisplayName(user: { nickname: string | null; name: string | null; email: string | null; retainUntil: Date | null }) {
-  const hasData = user.nickname !== null || user.name !== null;
+function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
   const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (hasData) return { name: user.nickname ?? user.name ?? "(닉네임 없음)", email: user.email, retained };
+  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
   return { name: "탈퇴한 유저", email: null, retained: false };
 }
 
@@ -52,7 +51,7 @@ export default async function AdminCommentReportsPage({
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
-        reporter: { select: { nickname: true, name: true, email: true, retainUntil: true } },
+        reporter: { select: { nickname: true, email: true, retainUntil: true } },
         comment: {
           select: {
             id: true,
@@ -60,7 +59,7 @@ export default async function AdminCommentReportsPage({
             deletedAt: true,
             parentId: true,
             postId: true,
-            author: { select: { nickname: true, name: true, email: true, retainUntil: true } },
+            author: { select: { nickname: true, email: true, retainUntil: true } },
           },
         },
       },
