@@ -321,28 +321,68 @@ export async function unbanUser(
   redirect(returnPath);
 }
 
+export async function purgeDeletedUser(userId: string): Promise<void> {
+  const session = await auth();
+  if (!session) redirect("/login");
+  if (session.user.role !== "ADMIN") redirect("/");
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } });
+  if (!user?.deletedAt) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { email: null, nickname: null, name: null, image: null, hashedNaverId: null, retainUntil: null },
+  });
+
+  revalidatePath("/admin/users");
+}
+
 export async function anonymizeExpiredUsers(): Promise<AnonymizeResult> {
   const session = await auth();
   if (!session) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/");
 
-  const expired = await prisma.user.findMany({
-    where: {
-      deletedAt: { not: null },
-      retainUntil: { lt: new Date() },
-      nickname: { not: null }, // 아직 익명화 안 된 유저
-    },
-    select: { id: true },
-  });
+  const now = new Date();
 
-  if (expired.length === 0) return { count: 0 };
+  // PII 아직 남아있는 유저 (구 소프트딜리트 방식)
+  const [piiExpired, hashedIdExpired] = await Promise.all([
+    prisma.user.findMany({
+      where: {
+        deletedAt: { not: null },
+        retainUntil: { lt: now },
+        nickname: { not: null },
+      },
+      select: { id: true },
+    }),
+    // hashedNaverId 아직 남아있는 유저 (신고 이력으로 재가입 차단 중이었던 유저)
+    prisma.user.findMany({
+      where: {
+        deletedAt: { not: null },
+        retainUntil: { lt: now },
+        hashedNaverId: { not: null },
+      },
+      select: { id: true },
+    }),
+  ]);
 
-  await prisma.user.updateMany({
-    where: { id: { in: expired.map((u) => u.id) } },
-    data: { email: null, nickname: null, name: null, image: null, retainUntil: null },
-  });
+  const piiIds = piiExpired.map((u) => u.id);
+  const hashedIds = hashedIdExpired.map((u) => u.id);
+  const allIds = [...new Set([...piiIds, ...hashedIds])];
 
-  return { count: expired.length };
+  if (allIds.length === 0) return { count: 0 };
+
+  await Promise.all([
+    piiIds.length > 0 && prisma.user.updateMany({
+      where: { id: { in: piiIds } },
+      data: { email: null, nickname: null, name: null, image: null, retainUntil: null },
+    }),
+    hashedIds.length > 0 && prisma.user.updateMany({
+      where: { id: { in: hashedIds } },
+      data: { hashedNaverId: null, retainUntil: null },
+    }),
+  ]);
+
+  return { count: allIds.length };
 }
 
 export async function hidePost(

@@ -1,25 +1,57 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/actions/post";
-import { CATEGORY_LABEL, STATUS_LABEL } from "@/lib/validators/post";
-import { PostCategory, PostStatus } from "@prisma/client";
+import {
+  BOARD_LABEL,
+  BOARD_DESC,
+  CATEGORY_LABEL,
+  STATUS_LABEL,
+  TRADE_METHODS,
+  TRADE_METHOD_LABEL,
+  DEFAULT_TRADE_METHOD,
+  ALLOWED_CATEGORIES,
+} from "@/lib/validators/post";
+import { PostBoard, PostCategory, PostStatus } from "@prisma/client";
 
 type Props = {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   defaultValues?: {
     title?: string;
-    content?: string;
+    content?: string | null;
+    board?: PostBoard;
     category?: PostCategory;
     status?: PostStatus;
+    negotiable?: boolean;
+    tradeMethod?: string;
+    characterName?: string | null;
   };
+  hideStatus?: boolean;
   submitLabel?: string;
 };
 
-export default function PostForm({ action, defaultValues, submitLabel = "작성 완료" }: Props) {
+export default function PostForm({ action, defaultValues, hideStatus = false, submitLabel = "작성 완료" }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, {});
+
+  const initBoard = defaultValues?.board ?? "GENERAL";
+  const initCategory = defaultValues?.category ?? "SELL";
+  const initTradeMethod = defaultValues?.tradeMethod ?? DEFAULT_TRADE_METHOD[initBoard];
+
+  const [selectedBoard, setSelectedBoard] = useState<PostBoard>(initBoard);
+  const [selectedCategory, setSelectedCategory] = useState<PostCategory>(initCategory);
+  const [selectedTradeMethod, setSelectedTradeMethod] = useState<string>(initTradeMethod);
+
+  function handleBoardChange(newBoard: PostBoard) {
+    setSelectedBoard(newBoard);
+    const allowed = ALLOWED_CATEGORIES[newBoard];
+    if (!allowed.includes(selectedCategory)) setSelectedCategory("SELL");
+    setSelectedTradeMethod(DEFAULT_TRADE_METHOD[newBoard]);
+  }
+
+  const itemLabel = selectedBoard === "ED" ? "ED비율 가격 수량" : "아이템명 가격 수량";
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -32,60 +64,89 @@ export default function PostForm({ action, defaultValues, submitLabel = "작성 
         </ul>
       </div>
 
-      <div className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-4">
+      <div className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-5">
         {state.errors?.general && (
           <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">
             {state.errors.general}
           </p>
         )}
 
-        {/* 거래 상태 */}
+        {/* 게시판 */}
         <div>
-          <label className="block text-sm font-medium mb-1">거래 상태</label>
+          <label className="block text-sm font-medium mb-1">게시판</label>
           <select
-            name="status"
-            defaultValue={defaultValues?.status ?? "OPEN"}
+            name="board"
+            value={selectedBoard}
+            onChange={(e) => handleBoardChange(e.target.value as PostBoard)}
             className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
           >
-            {Object.values(PostStatus).map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
+            {Object.values(PostBoard).map((b) => (
+              <option key={b} value={b}>
+                {BOARD_LABEL[b]} ({BOARD_DESC[b]})
               </option>
             ))}
           </select>
-          {state.errors?.status && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.status}</p>
+          {state.errors?.board && (
+            <p className="text-xs text-red-500 mt-1">{state.errors.board}</p>
           )}
         </div>
 
+        {/* 거래 상태 */}
+        {hideStatus ? (
+          <input type="hidden" name="status" value="OPEN" />
+        ) : (
+          <div>
+            <label className="block text-sm font-medium mb-1">거래 상태</label>
+            <select
+              name="status"
+              defaultValue={defaultValues?.status ?? "OPEN"}
+              className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+            >
+              {Object.values(PostStatus).map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+            {state.errors?.status && (
+              <p className="text-xs text-red-500 mt-1">{state.errors.status}</p>
+            )}
+          </div>
+        )}
+
         {/* 거래 종류 */}
         <div>
-          <label className="block text-sm font-medium mb-1">거래 종류</label>
-          <select
-            name="category"
-            defaultValue={defaultValues?.category ?? "SELL"}
-            className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
-          >
-            {Object.values(PostCategory).map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABEL[c]}
-              </option>
+          <label className="block text-sm font-medium mb-2">거래 종류</label>
+          <input type="hidden" name="category" value={selectedCategory} />
+          <div className="flex gap-4">
+            {ALLOWED_CATEGORIES[selectedBoard].map((c) => (
+              <label key={c} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="_category_display"
+                  value={c}
+                  checked={selectedCategory === c}
+                  onChange={() => setSelectedCategory(c)}
+                  className="accent-primary-base"
+                />
+                <span className="text-sm">{CATEGORY_LABEL[c]}</span>
+              </label>
             ))}
-          </select>
+          </div>
           {state.errors?.category && (
             <p className="text-xs text-red-500 mt-1">{state.errors.category}</p>
           )}
         </div>
 
-        {/* 제목 */}
+        {/* 아이템명 가격 수량 */}
         <div>
-          <label className="block text-sm font-medium mb-1">제목</label>
+          <label className="block text-sm font-medium mb-1">{itemLabel}</label>
           <input
             type="text"
             name="title"
             defaultValue={defaultValues?.title}
-            maxLength={100}
-            placeholder="제목을 입력하세요"
+            maxLength={256}
+            placeholder={`${itemLabel}을 입력하세요`}
             className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
           />
           {state.errors?.title && (
@@ -93,15 +154,92 @@ export default function PostForm({ action, defaultValues, submitLabel = "작성 
           )}
         </div>
 
-        {/* 내용 */}
+        {/* 흥정 */}
         <div>
-          <label className="block text-sm font-medium mb-1">내용</label>
+          <label className="block text-sm font-medium mb-2">흥정</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="negotiable"
+                value="true"
+                defaultChecked={defaultValues?.negotiable === true}
+                className="accent-primary-base"
+              />
+              <span className="text-sm">O</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="negotiable"
+                value="false"
+                defaultChecked={defaultValues?.negotiable !== true}
+                className="accent-primary-base"
+              />
+              <span className="text-sm">X</span>
+            </label>
+          </div>
+          {state.errors?.negotiable && (
+            <p className="text-xs text-red-500 mt-1">{state.errors.negotiable}</p>
+          )}
+        </div>
+
+        {/* 거래방식 */}
+        <div>
+          <label className="block text-sm font-medium mb-2">거래방식 및 거래순서</label>
+          <input type="hidden" name="tradeMethod" value={selectedTradeMethod} />
+          <div className="flex flex-col gap-2">
+            {TRADE_METHODS[selectedBoard].map((m) => (
+              <label key={m} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="_tradeMethod_display"
+                  value={m}
+                  checked={selectedTradeMethod === m}
+                  onChange={() => setSelectedTradeMethod(m)}
+                  className="accent-primary-base shrink-0"
+                />
+                <span className="text-sm">{TRADE_METHOD_LABEL[m]}</span>
+              </label>
+            ))}
+          </div>
+          {state.errors?.tradeMethod && (
+            <p className="text-xs text-red-500 mt-1">{state.errors.tradeMethod}</p>
+          )}
+        </div>
+
+        {/* 거래자 캐릭터명 (일반 게시판만) */}
+        {selectedBoard === "GENERAL" && (
+          <div>
+            <label className="block text-sm font-medium mb-1">거래자 캐릭터명</label>
+            <input
+              type="text"
+              name="characterName"
+              defaultValue={defaultValues?.characterName ?? ""}
+              maxLength={20}
+              placeholder="예) 엘소드@S"
+              className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              서버 구분자 포함 가능 (예: 닉네임@S, 닉네임@G)
+            </p>
+            {state.errors?.characterName && (
+              <p className="text-xs text-red-500 mt-1">{state.errors.characterName}</p>
+            )}
+          </div>
+        )}
+
+        {/* 기타 사항 (선택) */}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            기타 사항 <span className="text-muted-foreground font-normal">(선택)</span>
+          </label>
           <textarea
             name="content"
-            defaultValue={defaultValues?.content}
-            rows={6}
-            maxLength={5000}
-            placeholder="아이템 설명, 가격, 거래 방법 등을 적어주세요"
+            defaultValue={defaultValues?.content ?? ""}
+            rows={4}
+            maxLength={256}
+            placeholder="추가 안내 사항을 입력하세요"
             className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base resize-none transition-all"
           />
           {state.errors?.content && (

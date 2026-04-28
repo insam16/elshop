@@ -16,6 +16,13 @@ enum Role {
   ADMIN // 관리자
 }
 
+enum PostBoard {
+  CREDIT   // 신용 (아이템-현금)
+  ED       // ED (ED-현금)
+  GENERAL  // 일반 (아이템-게임머니)
+  OTHER    // 기타
+}
+
 enum PostCategory {
   SELL  // 판매
   BUY   // 구매
@@ -24,7 +31,7 @@ enum PostCategory {
 
 enum PostStatus {
   OPEN      // 거래 가능
-  RESERVED  // 예약 중
+  RESERVED  // 예약
   COMPLETED // 거래 완료
 }
 
@@ -79,6 +86,7 @@ model User {
   retainUntil   DateTime?
   isBanned      Boolean   @default(false)
   bannedUntil   DateTime?
+  hashedNaverId String?   @unique
 
   accounts        Account[]
   sessions        Session[]
@@ -140,17 +148,21 @@ model VerificationToken {
 }
 
 model Post {
-  id           Int          @id @default(autoincrement())
-  title        String
-  content      String
-  category     PostCategory
-  status       PostStatus   @default(OPEN)
-  authorId     String
-  isPremium    Boolean      @default(false)
-  premiumUntil DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  deletedAt    DateTime?
+  id            Int          @id @default(autoincrement())
+  title         String
+  content       String?
+  board         PostBoard    @default(GENERAL)
+  category      PostCategory
+  status        PostStatus   @default(OPEN)
+  negotiable    Boolean      @default(false)
+  tradeMethod   String       @default("OTHER")
+  characterName String?
+  authorId      String
+  isPremium     Boolean      @default(false)
+  premiumUntil  DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
 
   author        User           @relation(fields: [authorId], references: [id])
   images        PostImage[]
@@ -160,7 +172,7 @@ model Post {
   notifications Notification[]
 
   @@index([authorId])
-  @@index([category, status])
+  @@index([board, category, status])
   @@index([createdAt(sort: Desc)])
   @@index([isPremium, premiumUntil])
   @@map("posts")

@@ -22,13 +22,12 @@
 
 1. 사용자가 "네이버로 시작하기" 클릭
 2. Naver OAuth 인증 페이지로 이동
-3. 사용자 로그인 및 동의 (생년월일 포함)
+3. 사용자 로그인 및 동의
 4. 콜백 → /api/auth/callback/naver
 5. NextAuth가 사용자 정보 수신
-6. **연령 확인** → 만 19세 미만이면 `/login?error=underage` 로 차단
-7. DB에 사용자 생성 또는 조회
-8. DB 세션 생성
-9. 로그인 완료 → `/account` 로 리다이렉트
+6. DB에 사용자 생성 또는 조회
+7. DB 세션 생성
+8. 로그인 완료
 
 ---
 
@@ -43,12 +42,15 @@
 
 ```
 User {
-  id:        String  (cuid)
-  publicId:  String  (nanoid, 외부 노출용)
-  nickname:  String? (unique)
-  role:      TEMP | USER | ADMIN
-  isBanned:  Boolean
-  createdAt: DateTime
+  id:             String   (cuid)
+  publicId:       String   (nanoid, 외부 노출용)
+  nickname:       String?  (unique)
+  role:           TEMP | USER | ADMIN
+  isBanned:       Boolean
+  hashedNaverId:  String?  (unique, salted SHA-256 — 재가입 차단용, 탈퇴 후 보존 가능)
+  deletedAt:      DateTime?
+  retainUntil:    DateTime?
+  createdAt:      DateTime
 }
 
 Account {
@@ -72,16 +74,16 @@ Account {
 
 ### 규칙
 
-- 로그인 후 본캐 인증 필수
+- 로그인 후 본캐 인증을 하면 모든 기능 사용 가능
 - 닉네임 중복 불가 (Unique)
 
 ### 상태 구분
 
 | 상태 | role | 설명 |
 |------|------|------|
-| 인증대기 | TEMP | 글/댓글 작성/읽기 불가 |
-| 인증됨 | USER | 모든 기능 사용 가능 |
-| 관리자 | ADMIN | 신고 처리, 제재 등 |
+| 인증대기 | TEMP | 게시글/댓글 열람 가능, 게시글 작성 1일 1개 (24시간 후 자동 삭제), 댓글 작성 1일 2개 |
+| 인증됨 | USER | 게시글/댓글 자유롭게 작성 |
+| 관리자 | ADMIN | 신고 처리, 글/댓글 삭제, 사용자 제재 |
 
 ---
 
@@ -128,7 +130,7 @@ session.user = {
 
 | 역할 | 권한 |
 |------|------|
-| TEMP | 글/댓글 작성/읽기 불가 |
+| TEMP | 게시글/댓글 열람, 게시글 작성 (1일 1개, 24시간 후 삭제), 댓글 작성 (1일 2개) |
 | USER | 게시글 작성, 댓글, 신고 |
 | ADMIN | 신고 처리, 글/댓글 삭제, 사용자 제재 |
 
@@ -145,7 +147,7 @@ session.user = {
 
 - 전화번호 수집 안 함
 - 이름 수집 안 함
-- 생년월일: 연령 확인 후 **즉시 폐기** (DB 저장 안 함)
+- 생년월일 수집 안 함
 - 네이버 계정 ID: salted SHA-256 해싱 후 저장
 
 ---
@@ -158,11 +160,9 @@ session.user = {
 
 ---
 
-### 3. 미성년자 차단
+### 3. 전연령 서비스
 
-- 만 19세 미만 가입 불가
-- 네이버 계정 생년월일(birthyear, birthday)로 확인
-- `signIn` 콜백에서 차단 → DB 저장 없이 종료
+- 누구나 이용 가능
 
 ---
 
@@ -179,7 +179,76 @@ Auth.js 기본 보호 사용
 
 ---
 
-## 9. 사기 방지 정책
+## 9. 탈퇴 및 계정 삭제
+
+### 처리 방식 (소프트 딜리트)
+
+회원 탈퇴와 네이버 연결끊기 모두 동일한 소프트 딜리트 로직을 적용한다.
+계정을 물리적으로 삭제하지 않고 `deletedAt`을 기록하며, PII는 즉시 익명화한다.
+
+### 처리 흐름
+
+| 조건 | 처리 |
+|------|------|
+| 신고 이력 없음 | PII 즉시 null, `hashedNaverId` 30일간 보존 후 삭제 (30일 후 재가입 허용), `Account` 삭제 |
+| 신고 이력 있음 | PII 즉시 null, `hashedNaverId` 1년간 보존, `retainUntil = now + 1년`, `Account` 삭제 |
+
+- **PII**: email, nickname, name, image
+- **Account 삭제**: 같은 네이버 계정으로 재로그인 불가
+- **기존 세션**: Account와 별개로 Session 레코드는 유지 → 만료 또는 로그아웃 전까지 접속 가능
+
+### 관련 파일
+
+- `src/lib/actions/user.ts` — `deleteAccount()` (계정 설정 페이지에서 직접 탈퇴)
+- `src/app/api/auth/naver/disconnect/route.ts` — 네이버 측 연결끊기 콜백 수신
+
+---
+
+## 10. 네이버 연결끊기 콜백
+
+사용자가 네이버 계정 설정에서 엘샵 연동을 해제할 경우, 네이버가 등록된 URL로 POST 요청을 보낸다.
+
+### 설정
+
+네이버 개발자 센터 → 내 애플리케이션 → API 설정 → **탈퇴 콜백 URL**:
+```
+https://elshop.insam16.dev/api/auth/naver/disconnect
+```
+
+### 처리 흐름
+
+1. 네이버가 `access_token` (form-encoded) POST
+2. `https://openapi.naver.com/v1/nid/me` 호출로 네이버 유저 ID 획득
+3. `hashNaverId(id)`로 해시 후 `User.hashedNaverId`로 조회
+4. 9번 섹션 탈퇴 로직과 동일하게 처리
+
+---
+
+## 11. 재가입 차단
+
+### 목적
+
+신고 이력이 없는 탈퇴 유저가 같은 네이버 계정으로 재가입하는 것을 30일간 차단. 
+신고 이력이 있는 탈퇴 유저가 같은 네이버 계정으로 재가입하는 것을 1년간 차단.
+
+### 구현
+
+`auth.ts` `signIn` 콜백에서 로그인 시도마다 확인:
+
+```
+hashedNaverId 일치 AND deletedAt IS NOT NULL AND retainUntil > now
+→ signIn 반환 false (로그인 차단)
+```
+
+### 만료 처리
+
+`retainUntil` 경과 후 `hashedNaverId`는 자동으로 null 처리되지 않는다.
+어드민 페이지 → "만료 데이터 정리" 버튼 실행 시 일괄 null 처리.
+(`anonymizeExpiredUsers` 액션이 PII 정리와 함께 처리)
+
+---
+
+## 12. 사기 방지 정책
 
 엘샵은 거래를 중개하지 않습니다.
 
@@ -197,14 +266,14 @@ Auth.js 기본 보호 사용
 
 ---
 
-## 10. 향후 확장 계획
+## 13. 향후 확장 계획
 
 - 본캐 인증 자동화
 - 안전거래 시스템 (Escrow) — 도입 시 재검수 및 청소년 보호 조치 필요
 
 ---
 
-## 11. 환경 변수
+## 14. 환경 변수
 
 ```
 AUTH_NAVER_ID=
@@ -215,7 +284,7 @@ SECRET_SALT=        # 네이버 ID 해싱용 salt
 
 ---
 
-## 12. 구현 참고
+## 15. 구현 참고
 
 ### Auth.js Provider 설정
 
@@ -233,7 +302,7 @@ Naver({
 
 ---
 
-## 13. 중요한 설계 결정 요약
+## 16. 중요한 설계 결정 요약
 
 - Auth.js v5 + DB 세션 채택
 - 네이버 ID salted SHA-256 해싱 저장
@@ -242,10 +311,13 @@ Naver({
 - 인증은 신뢰도 시스템으로 분리
 - 거래 개입 없음 (법적 리스크 최소화)
 - 만 19세 미만 가입 차단
+- 탈퇴 시 PII 즉시 익명화 (신고 이력 유무 무관)
+- 재가입 차단은 `hashedNaverId` 기반 (email 불사용 — 항상 null일 수 있음)
+- 신고 이력 없는 탈퇴 유저는 재가입 허용 (hashedNaverId null)
 
 ---
 
-## 14. 운영 원칙
+## 17. 운영 원칙
 
 - 운영자는 거래에 개입하지 않는다
 - 사용자 책임 하에 거래 진행
@@ -253,7 +325,7 @@ Naver({
 
 ---
 
-## 15. TODO
+## 18. TODO
 
 - [ ] Rate Limit 적용
 - [ ] 본캐 인증 자동화

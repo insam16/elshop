@@ -10,6 +10,7 @@ export default function SearchFilter() {
   const searchParams = useSearchParams();
 
   const currentQ = searchParams.get("q") ?? "";
+  const currentBoard = searchParams.get("board") ?? "";
   const currentCategory = searchParams.get("category") ?? "";
   const currentStatus = searchParams.get("status") ?? "";
 
@@ -31,6 +32,7 @@ export default function SearchFilter() {
   function push(params: { q: string; category: string; status: string }) {
     const qs = new URLSearchParams();
     if (params.q) qs.set("q", params.q);
+    if (currentBoard) qs.set("board", currentBoard);
     if (params.category) qs.set("category", params.category);
     if (params.status) qs.set("status", params.status);
     router.push(`/posts${qs.size ? `?${qs}` : ""}`);

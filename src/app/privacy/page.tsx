@@ -3,7 +3,7 @@ export const metadata = { title: "개인정보처리방침 | 엘샵" };
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto">
-      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 21일">
+      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 28일">
 
         <Section title="1. 수집하는 개인정보">
           <p className="mb-2">서비스는 다음 정보를 수집합니다.</p>
@@ -17,19 +17,19 @@ export default function PrivacyPage() {
             </thead>
             <tbody className="divide-y divide-border-base">
               <tr>
-                <td className="px-3 py-2">네이버 계정 식별자</td>
-                <td className="px-3 py-2">회원 식별 (로그인)</td>
-                <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2">생년월일</td>
-                <td className="px-3 py-2">연령 확인 (미성년자 가입 차단)</td>
-                <td className="px-3 py-2">확인 후 즉시 폐기 (저장 안 함)</td>
+                <td className="px-3 py-2">네이버 계정 식별자 (암호화)</td>
+                <td className="px-3 py-2">재가입 방지</td>
+                <td className="px-3 py-2">탈퇴 후 30일 보관 후 삭제 (신고 이력 있는 경우 1년 보관)</td>
               </tr>
               <tr>
                 <td className="px-3 py-2">엘소드 닉네임</td>
-                <td className="px-3 py-2">게시판 활동</td>
-                <td className="px-3 py-2">탈퇴 후 즉시 삭제</td>
+                <td className="px-3 py-2">게시판 활동 / 사기 방지</td>
+                <td className="px-3 py-2">탈퇴 후 30일 보관 후 삭제 (신고 이력 있는 경우 1년 보관)</td>
+              </tr>
+              <tr>
+                <td className="px-3 py-2">이메일, 이름, 프로필 이미지</td>
+                <td className="px-3 py-2">회원 식별 (로그인)</td>
+                <td className="px-3 py-2">탈퇴 시 즉시 삭제</td>
               </tr>
               <tr>
                 <td className="px-3 py-2">서비스 이용 기록</td>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
             <li>개인정보 열람 요청</li>
             <li>개인정보 수정·삭제 요청</li>
             <li>개인정보 처리 정지 요청</li>
-            <li>회원 탈퇴 (탈퇴 시 개인정보 즉시 삭제)</li>
+            <li>회원 탈퇴 (이메일·이름·이미지는 즉시 삭제, 닉네임·암호화된 식별자는 30일 후 삭제)</li>
           </ul>
           <p className="mt-2">권리 행사는 서비스 내 기능 또는 관리자 이메일로 요청할 수 있습니다.</p>
         </Section>
@@ -107,14 +107,7 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section title="8. 미성년자 이용 제한">
-          <p>
-            서비스는 만 19세 미만 미성년자의 개인정보를 수집하지 않으며, 미성년자는 서비스를 이용할 수 없습니다.
-            로그인 시 네이버 계정의 생년월일로 연령을 확인하며, 미성년자로 확인된 경우 가입이 차단됩니다.
-          </p>
-        </Section>
-
-        <Section title="9. 개인정보 보호책임자">
+        <Section title="8. 개인정보 보호책임자">
           <p>개인정보 처리에 관한 문의는 아래 책임자에게 연락해 주세요.</p>
           <ul className="mt-1">
             <li>성명: 나유민</li>

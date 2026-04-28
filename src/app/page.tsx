@@ -40,12 +40,12 @@ export default function HomePage() {
         <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors group">
           <span className="flex h-2 w-2 rounded-full bg-primary-base animate-pulse"></span>
           <a
-            href="https://blog.insam16.dev/2026/04/18/%ec%97%98%ec%83%b5-%ec%98%a4%ed%94%88-%ec%95%88%eb%82%b4%eb%93%9c%eb%a6%bd%eb%8b%88%eb%8b%a4/"
+            href="/notice"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
           >
-            엘샵 오픈 안내드립니다 (2026.04.18)
+            공지사항
           </a>
           <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -140,10 +140,14 @@ export default async function AdminReportDetailPage({
             {(() => { const d = adminDisplayName(report.post.author); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
           </dd>
 
-          <dt className="text-muted-foreground">내용</dt>
+          <dt className="text-muted-foreground">기타 사항</dt>
           <dd className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">
-            {report.post.content.slice(0, 200)}
-            {report.post.content.length > 200 && "..."}
+            {report.post.content ? (
+              <>
+                {report.post.content.slice(0, 200)}
+                {report.post.content.length > 200 && "..."}
+              </>
+            ) : "-"}
           </dd>
         </dl>
       </section>

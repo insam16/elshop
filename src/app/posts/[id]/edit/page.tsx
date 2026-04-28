@@ -31,8 +31,12 @@ export default async function EditPostPage({
         defaultValues={{
           title: post.title,
           content: post.content,
+          board: post.board,
           category: post.category,
           status: post.status,
+          negotiable: post.negotiable,
+          tradeMethod: post.tradeMethod,
+          characterName: post.characterName,
         }}
         submitLabel="수정 완료"
       />

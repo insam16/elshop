@@ -7,7 +7,15 @@ export default function DeleteAccountButton() {
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
-    if (!confirm("정말 탈퇴하시겠어요? 모든 정보가 삭제되며 복구할 수 없습니다.")) return;
+    if (!confirm("정말 탈퇴하시겠어요?")) return;
+    if (!confirm(
+      "탈퇴 시 개인정보 처리 안내\n\n" +
+      "• 이메일, 프로필 이미지는 즉시 삭제됩니다.\n" +
+      "• 닉네임과 암호화된 계정 식별자는 30일간 보관 후 삭제됩니다.\n" +
+      "• 신고 이력이 있는 경우 닉네임과 식별자가 최대 1년간 보관될 수 있습니다.\n" +
+      "• 작성하신 게시글과 댓글은 삭제되지 않습니다.\n\n" +
+      "위 내용에 동의하고 탈퇴를 진행하시겠습니까?"
+    )) return;
     startTransition(async () => {
       await deleteAccount();
     });

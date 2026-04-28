@@ -23,7 +23,10 @@ export default async function Header() {
     <header className="border-b border-border-base bg-card text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-bold text-base hover:text-primary-base transition-colors">
-          엘샵
+          <div className="flex items-center gap-1.5">
+            <img className="w-4 h-4" src="/favicon.ico" alt="엘샵" />
+            엘샵
+          </div>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/posts" className="hover:text-primary-base transition-colors">

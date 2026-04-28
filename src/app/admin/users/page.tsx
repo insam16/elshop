@@ -5,10 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, AdminActionType } from "@prisma/client";
 import UserBanSection from "@/app/admin/_components/UserBanSection";
 import UserVerifySection from "@/app/admin/_components/UserVerifySection";
+import PurgeUserButton from "@/app/admin/_components/PurgeUserButton";
 
 const PAGE_SIZE = 20;
 
-type RoleFilter = "TEMP" | "USER" | "ALL";
+type RoleFilter = "TEMP" | "USER" | "ALL" | "DELETED";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -21,11 +22,17 @@ export default async function AdminUsersPage({
   const { page: pageParam, q, role: roleParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const query = q?.trim() ?? "";
-  const roleFilter: RoleFilter = (roleParam === "USER" || roleParam === "ALL") ? roleParam : "TEMP";
+  const roleFilter: RoleFilter =
+    roleParam === "USER" || roleParam === "ALL" || roleParam === "DELETED" ? roleParam : "TEMP";
 
   const where: Prisma.UserWhereInput = {};
-  if (roleFilter !== "ALL") where.role = roleFilter;
-  else where.role = { in: ["TEMP", "USER"] };
+  if (roleFilter === "DELETED") {
+    where.deletedAt = { not: null };
+  } else {
+    where.deletedAt = null;
+    if (roleFilter !== "ALL") where.role = roleFilter;
+    else where.role = { in: ["TEMP", "USER"] };
+  }
 
   if (query) {
     where.OR = [
@@ -34,10 +41,10 @@ export default async function AdminUsersPage({
     ];
   }
 
-  const [users, total, tempCount] = await Promise.all([
+  const [users, total, tempCount, deletedCount] = await Promise.all([
     prisma.user.findMany({
       where,
-      orderBy: { createdAt: "asc" },
+      orderBy: roleFilter === "DELETED" ? { deletedAt: "desc" } : { createdAt: "asc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
@@ -50,10 +57,13 @@ export default async function AdminUsersPage({
         bannedUntil: true,
         createdAt: true,
         deletedAt: true,
+        retainUntil: true,
+        hashedNaverId: true,
       },
     }),
     prisma.user.count({ where }),
-    prisma.user.count({ where: { role: "TEMP" } }),
+    prisma.user.count({ where: { role: "TEMP", deletedAt: null } }),
+    prisma.user.count({ where: { deletedAt: { not: null } } }),
   ]);
 
   const userIds = users.map((u) => u.id);
@@ -87,7 +97,7 @@ export default async function AdminUsersPage({
       </div>
 
       {/* 탭 */}
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-5 flex-wrap">
         <Link href="/admin/users?role=TEMP" className={roleFilter === "TEMP" ? tabActive : tabInactive}>
           인증 대기
           {tempCount > 0 && (
@@ -101,6 +111,14 @@ export default async function AdminUsersPage({
         </Link>
         <Link href="/admin/users?role=ALL" className={roleFilter === "ALL" ? tabActive : tabInactive}>
           전체
+        </Link>
+        <Link href="/admin/users?role=DELETED" className={roleFilter === "DELETED" ? tabActive : tabInactive}>
+          탈퇴
+          {deletedCount > 0 && (
+            <span className="ml-1.5 bg-muted-foreground/30 text-muted-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              {deletedCount}
+            </span>
+          )}
         </Link>
       </div>
 
@@ -136,12 +154,47 @@ export default async function AdminUsersPage({
               const rejectCount = rejectCountByUser.get(user.id) ?? 0;
               const isTemp = user.role === "TEMP";
 
+              if (isDeleted) {
+                const now = new Date();
+                const expired = user.retainUntil ? user.retainUntil < now : true;
+                const retainLabel = user.retainUntil
+                  ? expired
+                    ? "만료됨"
+                    : `${user.retainUntil.toLocaleDateString("ko-KR")} 만료`
+                  : "-";
+                const hasCooldown = !!user.hashedNaverId;
+
+                return (
+                  <div key={user.id} className="bg-card border border-border-base rounded-xl p-5 flex flex-col gap-1.5 opacity-70">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm text-muted-foreground line-through">
+                            {user.nickname ?? "(익명화됨)"}
+                          </span>
+                          <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground">탈퇴</span>
+                          {hasCooldown && !expired && (
+                            <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">쿨다운</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">탈퇴일: {user.deletedAt!.toLocaleDateString("ko-KR")}</span>
+                        <span className="text-xs text-muted-foreground">데이터 보관: {retainLabel}</span>
+                        <span className="text-xs text-muted-foreground">가입: {user.createdAt.toLocaleDateString("ko-KR")}</span>
+                      </div>
+                      {(hasCooldown || user.retainUntil) && (
+                        <PurgeUserButton userId={user.id} />
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={user.id} className="bg-card border border-border-base rounded-xl p-5 flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-medium text-sm ${isDeleted ? "text-muted-foreground line-through" : ""}`}>
+                        <span className="font-medium text-sm">
                           {user.nickname ?? "-"}
                         </span>
                         {isTemp && (
@@ -154,7 +207,6 @@ export default async function AdminUsersPage({
                             {isPermanent ? "영구차단" : "이용제한"}
                           </span>
                         )}
-                        {isDeleted && <span className="text-xs text-muted-foreground">(탈퇴)</span>}
                       </div>
                       <span className="text-xs text-muted-foreground">{user.email ?? "-"}</span>
                       <span className="text-xs text-muted-foreground">가입 {user.createdAt.toLocaleDateString("ko-KR")}</span>
@@ -166,31 +218,29 @@ export default async function AdminUsersPage({
                         </span>
                       )}
                     </div>
-                    {!isDeleted && !isTemp && (
+                    {!isTemp && (
                       <Link href={`/users/${user.publicId}`} className="text-xs text-primary-base hover:underline shrink-0">
                         프로필
                       </Link>
                     )}
                   </div>
 
-                  {!isDeleted && (
-                    <div className="border-t border-border-base pt-4">
-                      {isTemp ? (
-                        <UserVerifySection
-                          userId={user.id}
-                          returnPath={returnPath}
-                          rejectCount={rejectCount}
-                        />
-                      ) : (
-                        <UserBanSection
-                          userId={user.id}
-                          isBanned={user.isBanned}
-                          bannedUntil={user.bannedUntil}
-                          returnPath={returnPath}
-                        />
-                      )}
-                    </div>
-                  )}
+                  <div className="border-t border-border-base pt-4">
+                    {isTemp ? (
+                      <UserVerifySection
+                        userId={user.id}
+                        returnPath={returnPath}
+                        rejectCount={rejectCount}
+                      />
+                    ) : (
+                      <UserBanSection
+                        userId={user.id}
+                        isBanned={user.isBanned}
+                        bannedUntil={user.bannedUntil}
+                        returnPath={returnPath}
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })}

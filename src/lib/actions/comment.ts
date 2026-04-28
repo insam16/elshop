@@ -21,7 +21,13 @@ export async function createComment(
   const session = await auth();
   if (!session) redirect("/login");
 
-  if (session.user.role === "TEMP") return { error: "본캐 인증 후 이용할 수 있습니다." };
+  if (session.user.role === "TEMP") {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentCount = await prisma.comment.count({
+      where: { authorId: session.user.id, createdAt: { gt: oneDayAgo }, deletedAt: null },
+    });
+    if (recentCount >= 2) return { error: "미인증 계정은 하루에 댓글을 2개까지만 작성할 수 있습니다." };
+  }
 
   const banMessage = await checkAndExpireBan(session.user.id);
   if (banMessage) return { error: banMessage };

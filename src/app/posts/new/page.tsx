@@ -6,12 +6,11 @@ import PostForm from "../_components/PostForm";
 export default async function NewPostPage() {
   const session = await auth();
   if (!session) redirect("/login");
-  if (session.user.role === "TEMP") redirect("/account");
 
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-xl font-bold mb-6">거래 글 작성</h1>
-      <PostForm action={createPost} />
+      <PostForm action={createPost} hideStatus />
     </div>
   );
 }

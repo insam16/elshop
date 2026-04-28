@@ -31,7 +31,7 @@ export default function UserVerifySection({ userId, returnPath, rejectCount }: P
           <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{approveState.error}</p>
         )}
         <div>
-          <label className="block text-sm font-medium mb-1">캐릭터명 (구글 시트 확인 후 입력)</label>
+          <label className="block text-sm font-medium mb-1">캐릭터명</label>
           <input
             type="text"
             name="characterName"

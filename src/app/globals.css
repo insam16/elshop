@@ -49,6 +49,15 @@
   }
 }
 
+@layer components {
+  .board-label-badge {
+    @apply inline-block w-[30px] text-center opacity-60 text-[10px] uppercase font-bold py-0.5 shrink-0;
+  }
+  .post-badge {
+    @apply text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

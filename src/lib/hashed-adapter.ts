@@ -2,8 +2,9 @@ import crypto from "crypto";
 import { nanoid } from "nanoid";
 import type { Adapter, AdapterAccount, AdapterUser } from "next-auth/adapters";
 import { generateTempNickname } from "@/lib/temp-nickname";
+import { prisma } from "@/lib/prisma";
 
-function hashNaverId(naverId: string): string {
+export function hashNaverId(naverId: string): string {
   return crypto
     .createHash("sha256")
     .update(naverId + process.env.SECRET_SALT)
@@ -26,8 +27,16 @@ export function withHashedNaverId(adapter: Adapter): Adapter {
       return adapter.createUser!({ ...user, publicId: nanoid(12), nickname });
     },
 
-    linkAccount: (account: AdapterAccount) =>
-      adapter.linkAccount!(hashAccount(account)),
+    linkAccount: async (account: AdapterAccount) => {
+      const hashed = hashAccount(account);
+      if (account.provider === "naver") {
+        await prisma.user.update({
+          where: { id: account.userId },
+          data: { hashedNaverId: hashed.providerAccountId },
+        });
+      }
+      await adapter.linkAccount!(hashed);
+    },
 
     unlinkAccount: (account: Pick<AdapterAccount, "provider" | "providerAccountId">) =>
       adapter.unlinkAccount!(hashAccount(account)),

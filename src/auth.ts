@@ -2,18 +2,7 @@ import NextAuth from "next-auth";
 import Naver, { NaverProfile } from "next-auth/providers/naver";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import { withHashedNaverId } from "@/lib/hashed-adapter";
-
-// birthyear: "YYYY", birthday: "MM-DD" (Naver format)
-function isUnder19(birthyear: string, birthday?: string | null): boolean {
-  const today = new Date();
-  const year = parseInt(birthyear, 10);
-  if (birthday) {
-    const [month, day] = birthday.split("-").map(Number);
-    return today < new Date(year + 19, month - 1, day);
-  }
-  return today < new Date(year + 19, 11, 31);
-}
+import { withHashedNaverId, hashNaverId } from "@/lib/hashed-adapter";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: withHashedNaverId(PrismaAdapter(prisma)),
@@ -29,13 +18,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "database" },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   callbacks: {
-    signIn({ account, profile }) {
-      if (account?.provider === "naver") {
-        const { birthyear, birthday } = (profile as NaverProfile).response;
-        if (!birthyear) return "/login?error=no_birthyear";
-        if (isUnder19(birthyear, birthday)) return "/login?error=underage";
+    async signIn({ account }) {
+      if (account?.provider === "naver" && account.providerAccountId) {
+        const hashed = hashNaverId(account.providerAccountId);
+        const blocked = await prisma.user.findFirst({
+          where: {
+            hashedNaverId: hashed,
+            deletedAt: { not: null },
+            retainUntil: { gt: new Date() },
+          },
+        });
+        if (blocked) return false;
       }
       return true;
     },
