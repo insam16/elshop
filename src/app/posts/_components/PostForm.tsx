@@ -208,26 +208,24 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
           )}
         </div>
 
-        {/* 거래자 캐릭터명 (일반 게시판만) */}
-        {selectedBoard === "GENERAL" && (
-          <div>
-            <label className="label">거래자 캐릭터명</label>
-            <input
-              type="text"
-              name="characterName"
-              defaultValue={defaultValues?.characterName ?? ""}
-              maxLength={20}
-              placeholder="예) 엘소드@S"
-              className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              서버 구분자 포함 가능 (예: 닉네임@S, 닉네임@G)
-            </p>
-            {state.errors?.characterName && (
-              <p className="field-error">{state.errors.characterName}</p>
-            )}
-          </div>
-        )}
+        {/* 거래자 캐릭터명 */}
+        <div>
+          <label className="label">거래자 캐릭터명 <span className="text-muted-foreground font-normal">(선택)</span></label>
+          <input
+            type="text"
+            name="characterName"
+            defaultValue={defaultValues?.characterName ?? ""}
+            maxLength={20}
+            placeholder="예) 엘소드@S"
+            className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            서버 구분자 포함 가능 (예: 닉네임@S, 닉네임@G)
+          </p>
+          {state.errors?.characterName && (
+            <p className="field-error">{state.errors.characterName}</p>
+          )}
+        </div>
 
         {/* 기타 사항 (선택) */}
         <div>

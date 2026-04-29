@@ -75,7 +75,7 @@ export async function createPost(
       status: data.status as PostStatus,
       negotiable: data.negotiable === "true",
       tradeMethod: data.tradeMethod,
-      characterName: data.board === "GENERAL" ? data.characterName || null : null,
+      characterName: data.characterName || null,
       authorId: session.user.id,
     },
   });
@@ -139,7 +139,7 @@ export async function updatePost(
       status: data.status as PostStatus,
       negotiable: data.negotiable === "true",
       tradeMethod: data.tradeMethod,
-      characterName: data.board === "GENERAL" ? data.characterName || null : null,
+      characterName: data.characterName || null,
     },
   });
 
