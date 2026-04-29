@@ -175,9 +175,10 @@ model Post {
   notifications Notification[]
 
   @@index([authorId])
-  @@index([board, category, status])
-  @@index([createdAt(sort: Desc)])
-  @@index([isPremium, premiumUntil])
+  @@index([deletedAt, createdAt(sort: Desc)])
+  @@index([deletedAt, board, createdAt(sort: Desc)])
+  @@index([deletedAt, isPremium, premiumUntil])
+  @@index([deletedAt, board, category, status])
   @@map("posts")
 }
 

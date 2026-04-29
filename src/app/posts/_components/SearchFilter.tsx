@@ -17,11 +17,14 @@ export default function SearchFilter() {
   const [query, setQuery] = useState(currentQ);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // 검색어 디바운스 처리
+  useEffect(() => {
+    setQuery(currentQ);
+  }, [currentQ]);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      push({ q: query, category: currentCategory, status: currentStatus });
+      push({ q: query.trim().replace(/\s+/g, " "), category: currentCategory, status: currentStatus });
     }, 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -39,6 +42,7 @@ export default function SearchFilter() {
   }
 
   function toggleCategory(value: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     push({
       q: query,
       category: currentCategory === value ? "" : value,
@@ -47,6 +51,7 @@ export default function SearchFilter() {
   }
 
   function toggleStatus(value: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     push({
       q: query,
       category: currentCategory,
@@ -62,6 +67,7 @@ export default function SearchFilter() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="제목 또는 내용 검색"
+        maxLength={20}
         className="input transition-all"
       />
 
