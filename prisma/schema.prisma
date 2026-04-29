@@ -51,14 +51,17 @@ enum ReportStatus {
 }
 
 enum AdminActionType {
-  DELETE_POST    // 게시글 삭제
-  RESTORE_POST   // 게시글 복구
-  RESOLVE_REPORT // 신고 처리 완료
-  REJECT_REPORT  // 신고 반려
-  BAN_USER       // 사용자 제재
-  UNBAN_USER     // 제재 해제
-  APPROVE_USER   // 인증 승인
-  REJECT_USER    // 인증 거절
+  DELETE_POST            // 게시글 삭제
+  RESTORE_POST           // 게시글 복구
+  RESOLVE_REPORT         // 게시글 신고 처리 완료
+  REJECT_REPORT          // 게시글 신고 반려
+  BAN_USER               // 사용자 제재
+  UNBAN_USER             // 제재 해제
+  APPROVE_USER           // 인증 승인
+  REJECT_USER            // 인증 거절
+  DELETE_COMMENT         // 댓글 삭제
+  RESOLVE_COMMENT_REPORT // 댓글 신고 처리 완료
+  REJECT_COMMENT_REPORT  // 댓글 신고 반려
 }
 
 enum NotificationType {
@@ -206,6 +209,7 @@ model Comment {
   replies       Comment[]      @relation("CommentReplies")
   notifications Notification[]
   reports       CommentReport[]
+  adminActions  AdminAction[]
 
   @@index([postId])
   @@index([parentId])
@@ -238,18 +242,24 @@ model AdminAction {
   note       String?
   createdAt  DateTime        @default(now())
 
-  postId       Int?
-  reportId     String?
-  targetUserId String?
+  postId          Int?
+  reportId        String?
+  commentId       String?
+  commentReportId String?
+  targetUserId    String?
 
-  admin      User    @relation("AdminActionPerformer", fields: [adminId], references: [id])
-  post       Post?   @relation(fields: [postId], references: [id])
-  report     Report? @relation(fields: [reportId], references: [id])
-  targetUser User?   @relation("AdminActionTarget", fields: [targetUserId], references: [id])
+  admin         User           @relation("AdminActionPerformer", fields: [adminId], references: [id])
+  post          Post?          @relation(fields: [postId], references: [id])
+  report        Report?        @relation(fields: [reportId], references: [id])
+  comment       Comment?       @relation(fields: [commentId], references: [id])
+  commentReport CommentReport? @relation(fields: [commentReportId], references: [id])
+  targetUser    User?          @relation("AdminActionTarget", fields: [targetUserId], references: [id])
 
   @@index([adminId])
   @@index([postId])
   @@index([reportId])
+  @@index([commentId])
+  @@index([commentReportId])
   @@index([targetUserId])
   @@map("admin_actions")
 }
@@ -298,6 +308,17 @@ model TempNicknameSeq {
   @@map("temp_nickname_seq")
 }
 
+model RetainedUser {
+  id            String   @id @default(cuid())
+  publicId      String   @unique
+  nickname      String
+  hashedNaverId String   @unique
+  retainUntil   DateTime
+  createdAt     DateTime @default(now())
+
+  @@map("retained_users")
+}
+
 model CommentReport {
   id         String       @id @default(cuid())
   reporterId String
@@ -307,8 +328,9 @@ model CommentReport {
   status     ReportStatus @default(PENDING)
   createdAt  DateTime     @default(now())
 
-  reporter User    @relation("CommentReporter", fields: [reporterId], references: [id])
-  comment  Comment @relation(fields: [commentId], references: [id])
+  reporter     User          @relation("CommentReporter", fields: [reporterId], references: [id])
+  comment      Comment       @relation(fields: [commentId], references: [id])
+  adminActions AdminAction[]
 
   @@unique([reporterId, commentId])
   @@index([commentId])

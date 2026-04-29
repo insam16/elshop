@@ -44,10 +44,10 @@
 User {
   id:             String   (cuid)
   publicId:       String   (nanoid, 외부 노출용)
-  nickname:       String?  (unique)
+  nickname:       String?  (unique — 탈퇴 시 `탈퇴#${publicId}`로 익명화)
   role:           TEMP | USER | ADMIN
   isBanned:       Boolean
-  hashedNaverId:  String?  (unique, salted SHA-256 — 재가입 차단용, 탈퇴 후 보존 가능)
+  hashedNaverId:  String?  (unique, salted SHA-256 — 탈퇴 후 유지)
   deletedAt:      DateTime?
   retainUntil:    DateTime?
   createdAt:      DateTime
@@ -57,6 +57,15 @@ Account {
   provider:          "naver"
   providerAccountId: String (네이버 ID를 salted SHA-256 해싱한 64자리 hex 문자열)
   userId:            String (User.id 참조)
+}
+
+RetainedUser {
+  id:             String   (cuid)
+  publicId:       String   (unique — 탈퇴 전 User.publicId)
+  nickname:       String   (탈퇴 전 실제 닉네임)
+  hashedNaverId:  String   (unique — 재가입 차단 기준)
+  retainUntil:    DateTime
+  createdAt:      DateTime
 }
 ```
 
@@ -96,7 +105,7 @@ Account {
 
 ### 방식
 
-1. 구글폼으로 게임 스크린샷 제출
+1. 네이버폼으로 게임 스크린샷 제출
 2. 관리자 검토
 3. 어드민 페이지에서 닉네임 변경 및 role → USER 전환
 
@@ -162,7 +171,7 @@ session.user = {
 
 ### 3. 전연령 서비스
 
-- 누구나 이용 가능
+- 연령 제한 없음 (전체 이용가)
 
 ---
 
@@ -184,18 +193,18 @@ Auth.js 기본 보호 사용
 ### 처리 방식 (소프트 딜리트)
 
 회원 탈퇴와 네이버 연결끊기 모두 동일한 소프트 딜리트 로직을 적용한다.
-계정을 물리적으로 삭제하지 않고 `deletedAt`을 기록하며, PII는 즉시 익명화한다.
+계정을 물리적으로 삭제하지 않고 `deletedAt`을 기록하며, 닉네임은 즉시 익명화한다.
 
 ### 처리 흐름
 
 | 조건 | 처리 |
 |------|------|
-| 신고 이력 없음 | PII 즉시 null, `hashedNaverId` 30일간 보존 후 삭제 (30일 후 재가입 허용), `Account` 삭제 |
-| 신고 이력 있음 | PII 즉시 null, `hashedNaverId` 1년간 보존, `retainUntil = now + 1년`, `Account` 삭제 |
+| 신고 이력 없음 | 닉네임 `탈퇴#${publicId}`로 익명화, 실제 닉네임·hashedNaverId → RetainedUser 보존 (1년), `Account` 삭제 |
+| 신고 이력 있음 | 닉네임 `탈퇴#${publicId}`로 익명화, 실제 닉네임·hashedNaverId → RetainedUser 보존 (3년), `Account` 삭제 |
 
-- **PII**: email, nickname, name, image
+- **게시글·댓글**: 탈퇴 후에도 유지 (익명화된 닉네임으로 표시)
 - **Account 삭제**: 같은 네이버 계정으로 재로그인 불가
-- **기존 세션**: Account와 별개로 Session 레코드는 유지 → 만료 또는 로그아웃 전까지 접속 가능
+- **기존 세션**: Session 레코드는 유지 → 만료 또는 로그아웃 전까지 접속 가능
 
 ### 관련 파일
 
@@ -212,7 +221,7 @@ Auth.js 기본 보호 사용
 
 네이버 개발자 센터 → 내 애플리케이션 → API 설정 → **탈퇴 콜백 URL**:
 ```
-https://elshop.insam16.dev/api/auth/naver/disconnect
+https://elshop.shop/api/auth/naver/disconnect
 ```
 
 ### 처리 흐름
@@ -228,23 +237,22 @@ https://elshop.insam16.dev/api/auth/naver/disconnect
 
 ### 목적
 
-신고 이력이 없는 탈퇴 유저가 같은 네이버 계정으로 재가입하는 것을 30일간 차단. 
-신고 이력이 있는 탈퇴 유저가 같은 네이버 계정으로 재가입하는 것을 1년간 차단.
+탈퇴 유저가 같은 네이버 계정으로 재가입하는 것을 차단.
+신고 이력이 없는 경우 1년, 신고·부정 이용이 확인된 경우 3년간 차단.
 
 ### 구현
 
 `auth.ts` `signIn` 콜백에서 로그인 시도마다 확인:
 
 ```
-hashedNaverId 일치 AND deletedAt IS NOT NULL AND retainUntil > now
+RetainedUser.hashedNaverId 일치 AND retainUntil > now
 → signIn 반환 false (로그인 차단)
 ```
 
 ### 만료 처리
 
-`retainUntil` 경과 후 `hashedNaverId`는 자동으로 null 처리되지 않는다.
-어드민 페이지 → "만료 데이터 정리" 버튼 실행 시 일괄 null 처리.
-(`anonymizeExpiredUsers` 액션이 PII 정리와 함께 처리)
+`retainUntil` 경과 후 RetainedUser 레코드는 자동으로 삭제되지 않는다.
+어드민 페이지 → "만료 데이터 정리" 버튼 실행 시 일괄 삭제.
 
 ---
 
@@ -310,10 +318,10 @@ Naver({
 - 닉네임은 식별자가 아님
 - 인증은 신뢰도 시스템으로 분리
 - 거래 개입 없음 (법적 리스크 최소화)
-- 만 19세 미만 가입 차단
-- 탈퇴 시 PII 즉시 익명화 (신고 이력 유무 무관)
-- 재가입 차단은 `hashedNaverId` 기반 (email 불사용 — 항상 null일 수 있음)
-- 신고 이력 없는 탈퇴 유저는 재가입 허용 (hashedNaverId null)
+- 연령 제한 없음 (전체 이용가)
+- 탈퇴 시 닉네임 즉시 익명화 (`탈퇴#${publicId}`), 실제 닉네임은 RetainedUser에 보존
+- 재가입 차단은 RetainedUser.hashedNaverId 기준 (1년 / 3년)
+- 탈퇴 후 게시글·댓글은 익명화된 닉네임으로 유지
 
 ---
 

@@ -11,9 +11,9 @@ export default function Notice1Page() {
         </Link>
       </div>
 
-      <div className="bg-card border border-border-base rounded-xl p-6">
+      <div className="card">
         <h1 className="text-xl font-bold mb-1">엘샵 오픈 안내드립니다</h1>
-        <p className="text-sm text-muted-foreground mb-6">2026-04-28 · 늘춍</p>
+        <p className="text-sm text-muted-foreground mb-6">2026-04-28 15:00 · 늘춍</p>
 
         <div className="text-sm leading-relaxed flex flex-col gap-4 text-foreground">
           <p>안녕하세요.<br />엘샵을 개발한 늘춍입니다.</p>
@@ -25,32 +25,47 @@ export default function Notice1Page() {
 
           <p>
             그 아쉬움을 조금이나마 덜고자,<br />
-            간단한 형태지만 대체 거래 공간인 엘샵을 직접 제작하게 되었습니다.
+            간단한 형태지만 거래 정보를 공유할 수 있는 공간인 엘샵을 직접 제작하게 되었습니다.
+          </p>
+
+          <p className="text-muted-foreground border-l-2 border-border-base pl-3">
+            ※ 엘샵은 거래를 직접 중개하지 않습니다.<br />
+            유저 간 거래 정보 공유를 위한 게시판 형태의 서비스입니다.<br />
+            거래는 이용자 간에 이루어지며, 모든 책임은 당사자에게 있습니다.
           </p>
 
           <p>
-            현재는 최소 기능만 갖춘 임시 서비스이지만,<br />
-            이용자분들이 불편 없이 거래할 수 있도록 지속적으로 개선해 나갈 예정입니다.
+            현재는 최소 기능만 갖춘 초기 서비스이며,<br />
+            이용자분들이 보다 안전하게 거래할 수 있도록 지속적으로 개선해 나갈 예정입니다.
           </p>
 
           <div>
-            <p className="mb-2">앞으로는 다음과 같은 기능들을 고려하고 있습니다:</p>
+            <p className="mb-2">현재 이용 가능한 기능:</p>
             <ul className="list-disc list-inside flex flex-col gap-1 text-muted-foreground pl-1">
-              <li>사기 피해를 줄이기 위한 안전 거래 시스템</li>
+              <li>본캐 인증 시스템</li>
+              <li>본캐 미인증 유저의 닉네임 설정 제한 및 게시글/댓글 작성 제한</li>
+              <li>사기 예방 안내 및 신고 기능</li>
+              <li>닉네임 클릭 시 해당 유저의 게시글/댓글 목록 확인</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="mb-2">추가로 준비 중인 기능:</p>
+            <ul className="list-disc list-inside flex flex-col gap-1 text-muted-foreground pl-1">
+              <li>거래 정보 및 후기 공유</li>
               <li>게시글 상단 고정 등 부가 기능</li>
               <li>서비스 안정성을 위한 서버 확장 및 운영 개선</li>
             </ul>
           </div>
 
           <p>
-            서비스 운영에는 서버 비용, 유지 비용, 그리고 개발 리소스가 지속적으로 소요되기 때문에,<br />
-            추후 일부 유료 기능이 생길 수 있는 점 양해 부탁드립니다.<br />
+            서비스 운영에는 서버 비용 및 유지 비용이 지속적으로 발생하기 때문에,<br />
+            추후 일부 기능은 유료로 제공될 수 있습니다.<br />
             기본적인 이용은 최대한 무료로 유지할 계획입니다.
           </p>
 
           <p>
-            부족한 점이 많겠지만,<br />
-            여러분의 피드백을 바탕으로 더 나은 서비스로 발전시켜 나가겠습니다.<br />
+            불편한 점이나 개선 의견은 언제든지 환영합니다.<br />
             빠른 문의는 카카오톡 오픈채팅으로,<br />
             버그 신고 / 기능 요청은 네이버폼으로 부탁드립니다.
           </p>
@@ -77,17 +92,6 @@ export default function Notice1Page() {
             className="flex items-center justify-between border border-border-base bg-muted/40 rounded-lg px-4 py-3 hover:bg-muted transition-colors group text-sm"
           >
             <span>버그 신고 / 기능 요청 — 네이버폼</span>
-            <svg className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-2 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-          <a
-            href="https://naver.me/GJZXxRFd"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between border border-border-base bg-muted/40 rounded-lg px-4 py-3 hover:bg-muted transition-colors group text-sm"
-          >
-            <span>본캐 인증 — 네이버폼</span>
             <svg className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-2 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>

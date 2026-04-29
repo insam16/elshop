@@ -3,37 +3,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ReportReason, ReportStatus } from "@prisma/client";
-import AnonymizeButton from "./_components/AnonymizeButton";
+import { adminDisplayName, REASON_LABEL, STATUS_LABEL, STATUS_BADGE } from "@/lib/admin";
 
 const PAGE_SIZE = 20;
 
-function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
-  const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
-  return { name: "탈퇴한 유저", email: null, retained: false };
-}
-
-const REASON_LABEL: Record<ReportReason, string> = {
-  FRAUD: "사기",
-  FALSE_INFO: "허위 정보",
-  INAPPROPRIATE: "부적절한 내용",
-  IMPERSONATION: "타인 사칭",
-  OTHER: "기타",
-};
-
-const STATUS_LABEL: Record<ReportStatus, string> = {
-  PENDING: "대기중",
-  REVIEWING: "검토중",
-  RESOLVED: "처리완료",
-  REJECTED: "반려",
-};
-
-const STATUS_BADGE: Record<ReportStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  REVIEWING: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-gray-100 text-gray-500",
-};
 
 export default async function AdminReportsPage({
   searchParams,
@@ -72,10 +45,7 @@ export default async function AdminReportsPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold">게시글 신고 목록</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">총 {total}건</span>
-          <AnonymizeButton />
-        </div>
+        <span className="text-sm text-muted-foreground">총 {total}건</span>
       </div>
 
       {reports.length === 0 ? (
@@ -114,10 +84,10 @@ export default async function AdminReportsPage({
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {(() => { const d = adminDisplayName(report.post.author); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
+                      {(() => { const d = adminDisplayName(report.post.author); return (<>{d.name}</>); })()}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {(() => { const d = adminDisplayName(report.reporter); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
+                      {(() => { const d = adminDisplayName(report.reporter); return (<>{d.name}</>); })()}
                     </td>
                     <td className="px-4 py-3">{REASON_LABEL[report.reason]}</td>
                     <td className="px-4 py-3 max-w-[160px] text-muted-foreground text-xs break-words">

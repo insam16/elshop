@@ -50,11 +50,46 @@
 }
 
 @layer components {
+
+  /* 게시글 배지 */
   .board-label-badge {
     @apply inline-block w-[30px] text-center opacity-60 text-[10px] uppercase font-bold py-0.5 shrink-0;
   }
+
   .post-badge {
     @apply text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0;
+  }
+
+  /* 카드 컨테이너 */
+  .card {
+    @apply bg-card border border-border-base rounded-xl p-6;
+  }
+
+  /* 폼 요소 */
+  .input {
+    @apply w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base;
+  }
+
+  .label {
+    @apply block text-sm font-medium mb-1;
+  }
+
+  .field-error {
+    @apply text-xs text-red-500 mt-1;
+  }
+
+  .form-error {
+    @apply text-sm text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg;
+  }
+
+  /* 알림 배지 */
+  .notification-badge {
+    @apply bg-red-500 text-white text-[10px] font-bold px-1 min-w-[16px] h-4 flex items-center justify-center rounded-full leading-none;
+  }
+
+  /* 페이지 헤더 행 */
+  .page-header {
+    @apply flex items-center justify-between mb-4;
   }
 }
 

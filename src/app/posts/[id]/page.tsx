@@ -56,7 +56,7 @@ export default async function PostDetailPage({
         </Link>
       </div>
 
-      <div className="bg-card border border-border-base rounded-xl p-6">
+      <div className="card">
         {/* 뱃지 + 제목 */}
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="text-xs px-2 py-0.5 rounded pl-0 pr-0">
@@ -131,7 +131,7 @@ export default async function PostDetailPage({
       </div>
 
       {/* 댓글 */}
-      <div className="bg-card border border-border-base rounded-xl p-6">
+      <div className="card">
         <Comments
           postId={id}
           comments={post.comments}

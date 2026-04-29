@@ -12,7 +12,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
+      <div className="page-header">
         <h1 className="text-xl font-bold">알림</h1>
         {notifications.some((n) => !n.isRead) && (
           <form action={markAllAsRead}>

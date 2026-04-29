@@ -2,7 +2,7 @@ import { signIn, auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  AccessDenied: "탈퇴한 계정은 30일간 재가입이 제한됩니다.",
+  AccessDenied: "탈퇴한 계정은 1년 동안 재가입이 제한됩니다.",
 };
 
 export default async function LoginPage({
@@ -33,9 +33,9 @@ export default async function LoginPage({
         >
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 bg-[#03C75A] text-white py-3 rounded-lg font-medium hover:bg-[#02b350] transition-colors"
+            className="w-full flex items-center justify-center bg-[#03A94D] text-white py-3 rounded-lg font-medium hover:bg-[#02b350] transition-colors"
           >
-            <NaverIcon />
+            <img src="/login/naver_icon.png" alt="naver" width={45} height={45} style={{ marginRight: "8px" }} />
             네이버로 시작하기
           </button>
         </form>
@@ -44,11 +44,5 @@ export default async function LoginPage({
         </p>
       </div>
     </div>
-  );
-}
-
-function NaverIcon() {
-  return (
-    <span className="font-bold text-lg leading-none">N</span>
   );
 }

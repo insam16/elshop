@@ -9,14 +9,12 @@ export default async function Header() {
 
   let adminNotifications = 0;
   if (session?.user.role === "ADMIN") {
-    const [pendingReports, pendingCommentReports, pendingVerifications] =
+    const [pendingReports, pendingCommentReports] =
       await Promise.all([
         prisma.report.count({ where: { status: "PENDING" } }),
         prisma.commentReport.count({ where: { status: "PENDING" } }),
-        prisma.user.count({ where: { role: "TEMP" } }),
       ]);
-    adminNotifications =
-      pendingReports + pendingCommentReports + pendingVerifications;
+    adminNotifications = pendingReports + pendingCommentReports;
   }
 
   return (
@@ -44,7 +42,7 @@ export default async function Header() {
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                  <span className="notification-badge absolute -top-1.5 -right-1.5">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -61,7 +59,7 @@ export default async function Header() {
                   title="관리자 알림"
                 >
                   {adminNotifications > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 min-w-[18px] h-4 flex items-center justify-center rounded-full leading-none">
+                    <span className="notification-badge">
                       {adminNotifications > 99 ? "99+" : adminNotifications}
                     </span>
                   )}

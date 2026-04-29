@@ -3,36 +3,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ReportReason, ReportStatus } from "@prisma/client";
+import { adminDisplayName, REASON_LABEL, STATUS_LABEL, STATUS_BADGE } from "@/lib/admin";
 
 const PAGE_SIZE = 20;
-
-function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
-  const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
-  return { name: "탈퇴한 유저", email: null, retained: false };
-}
-
-const REASON_LABEL: Record<ReportReason, string> = {
-  FRAUD: "사기",
-  FALSE_INFO: "허위 정보",
-  INAPPROPRIATE: "부적절한 내용",
-  IMPERSONATION: "타인 사칭",
-  OTHER: "기타",
-};
-
-const STATUS_LABEL: Record<ReportStatus, string> = {
-  PENDING: "대기중",
-  REVIEWING: "검토중",
-  RESOLVED: "처리완료",
-  REJECTED: "반려",
-};
-
-const STATUS_BADGE: Record<ReportStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  REVIEWING: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-gray-100 text-gray-500",
-};
 
 export default async function AdminCommentReportsPage({
   searchParams,
@@ -111,10 +84,10 @@ export default async function AdminCommentReportsPage({
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {(() => { const d = adminDisplayName(report.comment.author); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
+                      {(() => { const d = adminDisplayName(report.comment.author); return (<>{d.name}</>); })()}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {(() => { const d = adminDisplayName(report.reporter); return (<>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}<div className="text-xs">{d.email ?? "-"}</div></>); })()}
+                      {(() => { const d = adminDisplayName(report.reporter); return (<>{d.name}</>); })()}
                     </td>
                     <td className="px-4 py-3">{REASON_LABEL[report.reason]}</td>
                     <td className="px-4 py-3">
@@ -185,11 +158,10 @@ function PaginationLink({
   return (
     <Link
       href={href}
-      className={`px-3 py-1.5 text-sm rounded transition-colors ${
-        active
-          ? "bg-primary-base text-primary-foreground font-medium"
-          : "border border-border-base hover:bg-muted"
-      }`}
+      className={`px-3 py-1.5 text-sm rounded transition-colors ${active
+        ? "bg-primary-base text-primary-foreground font-medium"
+        : "border border-border-base hover:bg-muted"
+        }`}
     >
       {children}
     </Link>

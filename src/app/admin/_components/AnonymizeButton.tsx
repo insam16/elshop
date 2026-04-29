@@ -8,10 +8,10 @@ export default function AnonymizeButton() {
   const [result, setResult] = useState<string | null>(null);
 
   function handleClick() {
-    if (!confirm("보존 기간이 만료된 탈퇴 유저의 개인정보를 즉시 익명화합니다. 진행할까요?")) return;
+    if (!confirm("보존 기간이 만료된 탈퇴 유저 데이터를 삭제합니다. 진행할까요?")) return;
     startTransition(async () => {
       const res = await anonymizeExpiredUsers();
-      setResult(res.error ? `오류: ${res.error}` : `${res.count}명 익명화 완료`);
+      setResult(res.error ? `오류: ${res.error}` : `${res.count}건 삭제 완료`);
     });
   }
 

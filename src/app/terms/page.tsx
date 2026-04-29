@@ -85,7 +85,7 @@ function PolicyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border-base rounded-xl p-6 md:p-8">
+    <div className="card md:p-8">
       <h1 className="text-2xl font-bold mb-1">{title}</h1>
       <p className="text-sm text-muted-foreground mb-8">시행일: {effectiveDate}</p>
       <div className="flex flex-col gap-6">{children}</div>

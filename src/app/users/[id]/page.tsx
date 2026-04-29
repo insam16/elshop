@@ -1,21 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { CATEGORY_LABEL, STATUS_LABEL } from "@/lib/validators/post";
-import { PostCategory, PostStatus } from "@prisma/client";
+import { BOARD_LABEL, CATEGORY_LABEL, STATUS_LABEL, CATEGORY_BADGE, STATUS_BADGE } from "@/lib/validators/post";
+import { PostBoard, PostCategory, PostStatus } from "@prisma/client";
 import { formatDate } from "@/lib/utils/date";
-
-const STATUS_BADGE: Record<PostStatus, string> = {
-  OPEN: "bg-green-100 text-green-700",
-  RESERVED: "bg-yellow-100 text-yellow-700",
-  COMPLETED: "bg-gray-100 text-gray-400",
-};
-
-const CATEGORY_BADGE: Record<PostCategory, string> = {
-  SELL: "border border-emerald-600 text-emerald-600",
-  BUY: "border border-sky-600 text-sky-600",
-  TRADE: "border border-violet-600 text-violet-600",
-};
 
 export default async function UserPage({
   params,
@@ -25,10 +13,10 @@ export default async function UserPage({
   const { id } = await params;
 
   const user = await prisma.user.findUnique({
-    where: { publicId: id, deletedAt: null },
+    where: { publicId: id },
     select: {
       nickname: true,
-      name: true,
+      deletedAt: true,
       _count: {
         select: {
           posts: { where: { deletedAt: null } },
@@ -41,8 +29,10 @@ export default async function UserPage({
         select: {
           id: true,
           title: true,
+          board: true,
           category: true,
           status: true,
+          isPremium: true,
           createdAt: true,
           _count: {
             select: { comments: { where: { deletedAt: null } } },
@@ -72,13 +62,17 @@ export default async function UserPage({
 
   if (!user) notFound();
 
-  const displayName = user.nickname ?? user.name ?? "탈퇴한 유저";
+  const displayName = user.nickname ?? "알 수 없음";
+  const isDeleted = !!user.deletedAt;
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       {/* 프로필 */}
-      <div className="bg-card border border-border-base rounded-xl p-6">
-        <h1 className="text-xl font-bold mb-4">{displayName}</h1>
+      <div className="card">
+        <h1 className="text-xl font-bold mb-1">{displayName}</h1>
+        {isDeleted && (
+          <p className="text-xs text-muted-foreground mb-4">탈퇴한 사용자입니다.</p>
+        )}
         <div className="flex gap-6 text-sm text-muted-foreground">
           <span>
             게시글{" "}
@@ -100,28 +94,7 @@ export default async function UserPage({
           <ul className="flex flex-col gap-2">
             {user.posts.map((post) => (
               <li key={post.id}>
-                <Link
-                  href={`/posts/${post.id}`}
-                  className="flex items-center justify-between bg-card border border-border-base rounded-xl px-4 py-3 hover:bg-muted transition-colors"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${CATEGORY_BADGE[post.category]}`}>
-                      {CATEGORY_LABEL[post.category]}
-                    </span>
-                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${STATUS_BADGE[post.status]}`}>
-                      {STATUS_LABEL[post.status]}
-                    </span>
-                    <span className="text-sm font-medium truncate">{post.title}</span>
-                    {post._count.comments > 0 && (
-                      <span className="text-xs font-bold text-primary-base shrink-0">
-                        [{post._count.comments}]
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground shrink-0 ml-3">
-                    {formatDate(post.createdAt)}
-                  </div>
-                </Link>
+                <PostRow post={post} />
               </li>
             ))}
           </ul>
@@ -141,14 +114,16 @@ export default async function UserPage({
                   href={`/posts/${comment.post.id}`}
                   className="flex flex-col gap-1 bg-card border border-border-base rounded-xl px-4 py-3 hover:bg-muted transition-colors"
                 >
-                  {/* 원글 정보 */}
                   <div className="flex items-center gap-2 min-w-0">
                     {comment.post.deletedAt ? (
                       <span className="text-xs text-muted-foreground">(삭제된 게시글)</span>
                     ) : (
                       <>
-                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${CATEGORY_BADGE[comment.post.category]}`}>
+                        <span className={`post-badge ${CATEGORY_BADGE[comment.post.category]}`}>
                           {CATEGORY_LABEL[comment.post.category]}
+                        </span>
+                        <span className={`post-badge ${STATUS_BADGE[comment.post.status]}`}>
+                          {STATUS_LABEL[comment.post.status]}
                         </span>
                         <span className="text-xs text-muted-foreground truncate">{comment.post.title}</span>
                       </>
@@ -157,7 +132,6 @@ export default async function UserPage({
                       {formatDate(comment.createdAt)}
                     </span>
                   </div>
-                  {/* 댓글 내용 */}
                   <p className="text-sm leading-relaxed line-clamp-2 whitespace-pre-wrap">
                     {comment.content}
                   </p>
@@ -167,6 +141,66 @@ export default async function UserPage({
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+type PostRowProps = {
+  post: {
+    id: number;
+    title: string;
+    board: PostBoard;
+    category: PostCategory;
+    status: PostStatus;
+    isPremium: boolean;
+    createdAt: Date;
+    _count: { comments: number };
+  };
+};
+
+function PostRow({ post }: PostRowProps) {
+  return (
+    <div
+      className={`border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${
+        post.isPremium
+          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
+          : "bg-card border-border-base"
+      }`}
+    >
+      <Link href={`/posts/${post.id}`} className="flex items-center gap-2 min-w-0">
+        {post.isPremium && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 bg-amber-500 text-white">
+            프리미엄
+          </span>
+        )}
+        <span className="board-label-badge">
+          [{BOARD_LABEL[post.board]}]
+        </span>
+        <span className={`post-badge ${CATEGORY_BADGE[post.category]}`}>
+          {CATEGORY_LABEL[post.category]}
+        </span>
+        <span className={`post-badge ${STATUS_BADGE[post.status]}`}>
+          {STATUS_LABEL[post.status]}
+        </span>
+        <span className="hidden sm:block text-sm font-medium truncate">{post.title}</span>
+        {post._count.comments > 0 && (
+          <span className="hidden sm:block text-xs font-bold text-primary-base shrink-0">
+            [{post._count.comments}]
+          </span>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground shrink-0">
+          {formatDate(post.createdAt)}
+        </span>
+      </Link>
+      {/* 모바일 전용 두 번째 줄: 제목 */}
+      <Link href={`/posts/${post.id}`} className="sm:hidden flex items-center gap-1.5 mt-1.5 min-w-0">
+        <span className="text-sm font-medium truncate">{post.title}</span>
+        {post._count.comments > 0 && (
+          <span className="text-xs font-bold text-primary-base shrink-0">
+            [{post._count.comments}]
+          </span>
+        )}
+      </Link>
     </div>
   );
 }

@@ -22,15 +22,15 @@ export default function CommentReportActionForm({ action, currentStatus }: Props
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state.error && (
-        <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{state.error}</p>
+        <p className="form-error">{state.error}</p>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">상태 변경</label>
+        <label className="label">상태 변경</label>
         <select
           name="status"
           defaultValue={currentStatus}
-          className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base"
+          className="input"
         >
           {Object.values(ReportStatus).map((s) => (
             <option key={s} value={s}>
@@ -41,7 +41,7 @@ export default function CommentReportActionForm({ action, currentStatus }: Props
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="label">
           처리 메모 <span className="text-muted-foreground font-normal">(선택)</span>
         </label>
         <textarea
@@ -49,7 +49,7 @@ export default function CommentReportActionForm({ action, currentStatus }: Props
           rows={3}
           maxLength={500}
           placeholder="처리 사유나 메모를 남겨주세요."
-          className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+          className="input resize-none"
         />
       </div>
 

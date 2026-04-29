@@ -47,7 +47,7 @@ export default function ReportModal({ postId }: { postId: number }) {
         onClose={() => setOpen(false)}
         className="fixed inset-0 m-auto h-fit rounded-xl border border-border-base bg-card p-6 w-[calc(100%-2rem)] max-w-sm shadow-xl backdrop:bg-black/40 animate-in fade-in zoom-in duration-200 text-foreground"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="page-header">
           <h2 className="text-base font-bold">게시글 신고</h2>
           <button
             onClick={() => setOpen(false)}
@@ -86,11 +86,11 @@ export default function ReportModal({ postId }: { postId: number }) {
 
             {/* 신고 사유 */}
             <div>
-              <label className="block text-sm font-medium mb-1">신고 사유</label>
+              <label className="label">신고 사유</label>
               <select
                 name="reason"
                 defaultValue="FRAUD"
-                className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base"
+                className="input"
               >
                 {Object.values(ReportReason).map((r) => (
                   <option key={r} value={r}>
@@ -102,7 +102,7 @@ export default function ReportModal({ postId }: { postId: number }) {
 
             {/* 상세 설명 */}
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="label">
                 상세 설명 <span className="text-muted-foreground font-normal">(선택)</span>
               </label>
               <textarea
@@ -110,7 +110,7 @@ export default function ReportModal({ postId }: { postId: number }) {
                 rows={3}
                 maxLength={500}
                 placeholder="구체적인 내용을 적어주시면 빠른 처리에 도움이 됩니다."
-                className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+                className="input resize-none"
               />
             </div>
 
