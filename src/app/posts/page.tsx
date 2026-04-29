@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOARD_LABEL, BOARD_DESC, CATEGORY_LABEL, STATUS_LABEL, CATEGORY_BADGE, STATUS_BADGE } from "@/lib/validators/post";
-import { PostBoard, PostCategory, PostStatus, Role } from "@prisma/client";
+import { Prisma, PostBoard, PostCategory, PostStatus, Role } from "@prisma/client";
 import { formatDate } from "@/lib/utils/date";
 import SearchFilter from "./_components/SearchFilter";
 import TempUserNotice from "./_components/TempUserNotice";
@@ -27,32 +27,30 @@ type PostInclude = {
 };
 
 
-function buildWhereClause(
+function buildBaseConditions(
   q: string | undefined,
   board: string | undefined,
   category: string | undefined,
   status: string | undefined,
-) {
-  return {
-    deletedAt: null,
-    ...(board && Object.values(PostBoard).includes(board as PostBoard)
-      ? { board: board as PostBoard }
-      : {}),
-    ...(category && Object.values(PostCategory).includes(category as PostCategory)
-      ? { category: category as PostCategory }
-      : {}),
-    ...(status && Object.values(PostStatus).includes(status as PostStatus)
-      ? { status: status as PostStatus }
-      : {}),
-    ...(q
-      ? {
+): Prisma.PostWhereInput[] {
+  const conditions: Prisma.PostWhereInput[] = [{ deletedAt: null }];
+  if (board && Object.values(PostBoard).includes(board as PostBoard))
+    conditions.push({ board: board as PostBoard });
+  if (category && Object.values(PostCategory).includes(category as PostCategory))
+    conditions.push({ category: category as PostCategory });
+  if (status && Object.values(PostStatus).includes(status as PostStatus))
+    conditions.push({ status: status as PostStatus });
+  if (q) {
+    for (const word of q.trim().split(/\s+/).filter(Boolean)) {
+      conditions.push({
         OR: [
-          { title: { contains: q, mode: "insensitive" as const } },
-          { content: { contains: q, mode: "insensitive" as const } },
+          { title: { contains: word, mode: "insensitive" } },
+          { content: { contains: word, mode: "insensitive" } },
         ],
-      }
-      : {}),
-  };
+      });
+    }
+  }
+  return conditions;
 }
 
 export default async function PostsPage({
@@ -71,32 +69,31 @@ export default async function PostsPage({
     ? (board as PostBoard)
     : null;
 
-  const baseWhere = buildWhereClause(q, activeBoard ?? undefined, category, status);
+  const baseConditions = buildBaseConditions(q, activeBoard ?? undefined, category, status);
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const premiumWhere = {
-    ...baseWhere,
-    isPremium: true,
-    premiumUntil: { gt: now },
+  const premiumWhere: Prisma.PostWhereInput = {
+    AND: [...baseConditions, { isPremium: true }, { premiumUntil: { gt: now } }],
   };
 
   // 일반 게시글: 프리미엄이 아니거나 만료된 것 + 인증 유저만
-  const regularWhere = {
-    ...baseWhere,
-    OR: [
-      { isPremium: false },
-      { isPremium: true, premiumUntil: { lte: now } },
+  const regularWhere: Prisma.PostWhereInput = {
+    AND: [
+      ...baseConditions,
+      { OR: [{ isPremium: false }, { isPremium: true, premiumUntil: { lte: now } }] },
+      { author: { role: { not: Role.TEMP } } },
     ],
-    author: { role: { not: Role.TEMP } },
   };
 
   // 임시 게시글: TEMP 작성자 + 24시간 이내
-  const tempWhere = {
-    ...baseWhere,
-    isPremium: false,
-    author: { role: Role.TEMP },
-    createdAt: { gt: twentyFourHoursAgo },
+  const tempWhere: Prisma.PostWhereInput = {
+    AND: [
+      ...baseConditions,
+      { isPremium: false },
+      { author: { role: Role.TEMP } },
+      { createdAt: { gt: twentyFourHoursAgo } },
+    ],
   };
 
   const includeOpts = {
