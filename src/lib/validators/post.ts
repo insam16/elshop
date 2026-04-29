@@ -122,8 +122,8 @@ export function validatePost(data: PostFormData): PostValidationError | null {
     errors.tradeMethod = "올바른 거래방식을 선택해주세요.";
   }
 
-  if (board === "GENERAL") {
-    const charErr = validateCharacterName(data.characterName ?? "");
+  if (data.characterName) {
+    const charErr = validateCharacterName(data.characterName);
     if (charErr) errors.characterName = charErr;
   }
 
