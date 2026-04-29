@@ -153,7 +153,7 @@ export default async function PostsPage({
   return (
     <div>
       {session.user.role === "TEMP" && <TempUserNotice />}
-      <div className="flex items-center justify-between mb-4">
+      <div className="page-header">
         <h1 className="text-xl font-bold">게시판</h1>
         <Link
           href="/posts/new"
@@ -211,7 +211,7 @@ export default async function PostsPage({
           {premiumPosts.length > 0 && (
             <section className="mb-6">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-sm font-bold text-amber-600">★ 프리미엄</span>
+                <span className="text-sm font-bold text-amber-600">★ 프리미엄 ★ </span>
                 <span className="text-xs text-muted-foreground">
                   ({showAll ? premiumTotal : Math.min(premiumTotal, PREMIUM_DISPLAY_LIMIT)}건)
                 </span>
@@ -360,13 +360,12 @@ type PostRowProps = {
 function PostRow({ post, premium, temp, showBoard }: PostRowProps) {
   return (
     <div
-      className={`border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${
-        premium
+      className={`border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${premium
           ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
           : temp
-          ? "bg-gray-100 border-gray-300 dark:bg-gray-900/50 dark:border-gray-700"
-          : "bg-card border-border-base"
-      }`}
+            ? "bg-gray-100 border-gray-300 dark:bg-gray-900/50 dark:border-gray-700"
+            : "bg-card border-border-base"
+        }`}
     >
       {/* 배지 + (데스크탑: 제목) + 메타 */}
       <div className="flex items-center justify-between gap-2">

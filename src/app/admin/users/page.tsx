@@ -6,6 +6,8 @@ import { Prisma, AdminActionType } from "@prisma/client";
 import UserBanSection from "@/app/admin/_components/UserBanSection";
 import UserVerifySection from "@/app/admin/_components/UserVerifySection";
 import PurgeUserButton from "@/app/admin/_components/PurgeUserButton";
+import AnonymizeButton from "@/app/admin/_components/AnonymizeButton";
+import ChangeRetentionButton from "@/app/admin/_components/ChangeRetentionButton";
 
 const PAGE_SIZE = 20;
 
@@ -41,7 +43,7 @@ export default async function AdminUsersPage({
     ];
   }
 
-  const [users, total, tempCount, deletedCount] = await Promise.all([
+  const [users, total, tempCount] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: roleFilter === "DELETED" ? { deletedAt: "desc" } : { createdAt: "asc" },
@@ -63,8 +65,16 @@ export default async function AdminUsersPage({
     }),
     prisma.user.count({ where }),
     prisma.user.count({ where: { role: "TEMP", deletedAt: null } }),
-    prisma.user.count({ where: { deletedAt: { not: null } } }),
   ]);
+
+  const publicIds = users.map((u) => u.publicId);
+  const retainedUsers = (roleFilter === "DELETED" && publicIds.length > 0)
+    ? await prisma.retainedUser.findMany({
+      where: { publicId: { in: publicIds } },
+      select: { publicId: true, nickname: true },
+    })
+    : ([] as { publicId: string; nickname: string }[]);
+  const retainedNicknameByPublicId = new Map<string, string>(retainedUsers.map((r) => [r.publicId, r.nickname]));
 
   const userIds = users.map((u) => u.id);
   const recentActions = userIds.length > 0 ? await prisma.adminAction.findMany({
@@ -76,7 +86,8 @@ export default async function AdminUsersPage({
     select: { targetUserId: true, actionType: true, createdAt: true, note: true, admin: { select: { nickname: true } } },
   }) : [];
 
-  const lastActionByUser = new Map(userIds.map((id) => [id, recentActions.find((a) => a.targetUserId === id) ?? null]));
+  type RecentAction = { targetUserId: string | null; actionType: AdminActionType; createdAt: Date; note: string | null; admin: { nickname: string | null } };
+  const lastActionByUser = new Map<string, RecentAction | null>(userIds.map((id) => [id, (recentActions as RecentAction[]).find((a) => a.targetUserId === id) ?? null]));
   const rejectCountByUser = new Map(userIds.map((id) => [
     id,
     recentActions.filter((a) => a.targetUserId === id && a.actionType === AdminActionType.REJECT_USER).length,
@@ -93,7 +104,10 @@ export default async function AdminUsersPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold">유저 관리</h1>
-        <span className="text-sm text-muted-foreground">총 {total}명</span>
+        <div className="flex items-center gap-4">
+          {roleFilter === "DELETED" && <AnonymizeButton />}
+          <span className="text-sm text-muted-foreground">총 {total}명</span>
+        </div>
       </div>
 
       {/* 탭 */}
@@ -114,11 +128,6 @@ export default async function AdminUsersPage({
         </Link>
         <Link href="/admin/users?role=DELETED" className={roleFilter === "DELETED" ? tabActive : tabInactive}>
           탈퇴
-          {deletedCount > 0 && (
-            <span className="ml-1.5 bg-muted-foreground/30 text-muted-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              {deletedCount}
-            </span>
-          )}
         </Link>
       </div>
 
@@ -129,7 +138,7 @@ export default async function AdminUsersPage({
           type="text"
           name="q"
           defaultValue={query}
-          placeholder="닉네임 또는 이메일"
+          placeholder="닉네임"
           className="border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base flex-1 max-w-sm"
         />
         <button type="submit" className="bg-primary-base text-primary-foreground px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
@@ -163,16 +172,21 @@ export default async function AdminUsersPage({
                     : `${user.retainUntil.toLocaleDateString("ko-KR")} 만료`
                   : "-";
                 const hasCooldown = !!user.hashedNaverId;
+                const actualNickname = retainedNicknameByPublicId.get(user.publicId) ?? null;
 
                 return (
-                  <div key={user.id} className="bg-card border border-border-base rounded-xl p-5 flex flex-col gap-1.5 opacity-70">
+                  <div key={user.id} className="bg-card border border-border-base rounded-xl p-5 flex flex-col gap-1.5">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm text-muted-foreground line-through">
-                            {user.nickname ?? "(익명화됨)"}
+                          <span className="font-medium text-sm text-red-400">
+                            {user.nickname ?? "(완전탈퇴됨)"}
                           </span>
-                          <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-muted text-muted-foreground">탈퇴</span>
+                          {actualNickname && (
+                            <span className="text-xs text-muted-foreground">
+                              ({actualNickname})
+                            </span>
+                          )}
                           {hasCooldown && !expired && (
                             <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-700">쿨다운</span>
                           )}
@@ -182,7 +196,10 @@ export default async function AdminUsersPage({
                         <span className="text-xs text-muted-foreground">가입: {user.createdAt.toLocaleDateString("ko-KR")}</span>
                       </div>
                       {(hasCooldown || user.retainUntil) && (
-                        <PurgeUserButton userId={user.id} />
+                        <div className="flex gap-2">
+                          <ChangeRetentionButton userId={user.id} currentYears={user.retainUntil && user.deletedAt ? (user.retainUntil.getTime() - user.deletedAt.getTime()) > 365 * 24 * 60 * 60 * 1000 ? 3 : 1 : null} />
+                          <PurgeUserButton userId={user.id} />
+                        </div>
                       )}
                     </div>
                   </div>

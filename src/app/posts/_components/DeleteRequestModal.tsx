@@ -37,7 +37,7 @@ export default function DeleteRequestModal({ postId }: { postId: number }) {
         onClose={() => setOpen(false)}
         className="fixed inset-0 m-auto h-fit rounded-xl border border-border-base bg-card p-6 w-[calc(100%-2rem)] max-w-sm shadow-xl backdrop:bg-black/40 animate-in fade-in zoom-in duration-200 text-foreground"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="page-header">
           <h2 className="text-base font-bold">게시글 삭제 요청</h2>
           <button
             onClick={() => setOpen(false)}
@@ -72,7 +72,7 @@ export default function DeleteRequestModal({ postId }: { postId: number }) {
               rows={3}
               maxLength={500}
               placeholder="삭제 사유를 입력해 주세요. (선택)"
-              className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+              className="input resize-none"
             />
 
             <div className="flex justify-end gap-2">

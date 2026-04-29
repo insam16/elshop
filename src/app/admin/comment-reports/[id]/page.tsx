@@ -3,38 +3,21 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { updateCommentReportStatus } from "@/lib/actions/admin";
-import { ReportReason, ReportStatus } from "@prisma/client";
+import { AdminActionType, ReportReason, ReportStatus } from "@prisma/client";
+import { adminDisplayName, REASON_LABEL, STATUS_LABEL, STATUS_BADGE } from "@/lib/admin";
 import CommentReportActionForm from "./_components/CommentReportActionForm";
 import CommentActionButtons from "./_components/CommentActionButtons";
 import UserBanSection from "@/app/admin/_components/UserBanSection";
 
-const REASON_LABEL: Record<ReportReason, string> = {
-  FRAUD: "사기",
-  FALSE_INFO: "허위 정보",
-  INAPPROPRIATE: "부적절한 내용",
-  IMPERSONATION: "타인 사칭",
-  OTHER: "기타",
+
+const ACTION_LABEL: Partial<Record<AdminActionType, string>> = {
+  DELETE_COMMENT: "댓글 삭제",
+  RESOLVE_COMMENT_REPORT: "신고 처리완료",
+  REJECT_COMMENT_REPORT: "신고 반려",
+  BAN_USER: "사용자 제재",
+  UNBAN_USER: "제재 해제",
 };
 
-const STATUS_LABEL: Record<ReportStatus, string> = {
-  PENDING: "대기중",
-  REVIEWING: "검토중",
-  RESOLVED: "처리완료",
-  REJECTED: "반려",
-};
-
-const STATUS_BADGE: Record<ReportStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  REVIEWING: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-gray-100 text-gray-500",
-};
-
-function adminDisplayName(user: { nickname: string | null; email: string | null; retainUntil: Date | null }) {
-  const retained = !!user.retainUntil && user.retainUntil > new Date();
-  if (user.nickname !== null) return { name: user.nickname, email: user.email, retained };
-  return { name: "탈퇴한 유저", email: null, retained: false };
-}
 
 export default async function AdminCommentReportDetailPage({
   params,
@@ -62,6 +45,10 @@ export default async function AdminCommentReportDetailPage({
           post: { select: { id: true, title: true } },
         },
       },
+      adminActions: {
+        orderBy: { createdAt: "desc" },
+        include: { admin: { select: { nickname: true } } },
+      },
     },
   });
 
@@ -82,7 +69,7 @@ export default async function AdminCommentReportDetailPage({
       </div>
 
       {/* 신고 정보 */}
-      <section className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-4">
+      <section className="card flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="font-bold">{commentType} 신고 상세</h1>
           <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_BADGE[report.status]}`}>
@@ -99,7 +86,7 @@ export default async function AdminCommentReportDetailPage({
 
           <dt className="text-muted-foreground">신고자</dt>
           <dd>
-            {(() => { const d = adminDisplayName(report.reporter); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
+            {(() => { const d = adminDisplayName(report.reporter); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}</>; })()}
           </dd>
 
           <dt className="text-muted-foreground">접수일</dt>
@@ -108,7 +95,7 @@ export default async function AdminCommentReportDetailPage({
       </section>
 
       {/* 댓글 정보 */}
-      <section className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-3">
+      <section className="card flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <h2 className="font-bold text-sm">신고 대상 {commentType}</h2>
           <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${report.comment.parentId ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
@@ -126,7 +113,7 @@ export default async function AdminCommentReportDetailPage({
 
           <dt className="text-muted-foreground">작성자</dt>
           <dd>
-            {(() => { const d = adminDisplayName(report.comment.author); return <>{d.name}{d.retained && <span className="ml-1 text-[10px] text-amber-600 border border-amber-300 px-1 rounded">보존중</span>}{d.email && <span className="text-xs text-muted-foreground ml-1">({d.email})</span>}</>; })()}
+            {(() => { const d = adminDisplayName(report.comment.author); return <>{d.name}</>; })()}
           </dd>
 
           <dt className="text-muted-foreground">작성일</dt>
@@ -143,8 +130,8 @@ export default async function AdminCommentReportDetailPage({
       </section>
 
       {/* 댓글 삭제 처리 */}
-      <section className="bg-card border border-border-base rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <section className="card">
+        <div className="page-header">
           <h2 className="font-bold text-sm">{commentType} 처리</h2>
           <span className={`text-xs px-2 py-0.5 rounded font-medium ${report.comment.deletedAt ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
             {report.comment.deletedAt ? "삭제됨" : "게시 중"}
@@ -158,8 +145,8 @@ export default async function AdminCommentReportDetailPage({
       </section>
 
       {/* 유저 제재 */}
-      <section className="bg-card border border-border-base rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <section className="card">
+        <div className="page-header">
           <h2 className="font-bold text-sm">작성자 제재</h2>
           {(() => { const d = adminDisplayName(report.comment.author); return <span className="text-xs text-muted-foreground">{d.name}</span>; })()}
         </div>
@@ -172,10 +159,32 @@ export default async function AdminCommentReportDetailPage({
       </section>
 
       {/* 신고 상태 변경 */}
-      <section className="bg-card border border-border-base rounded-xl p-6">
+      <section className="card">
         <h2 className="font-bold text-sm mb-4">신고 처리</h2>
         <CommentReportActionForm action={action} currentStatus={report.status} />
       </section>
+
+      {/* 처리 이력 */}
+      {report.adminActions.length > 0 && (
+        <section className="card">
+          <h2 className="font-bold text-sm mb-4">처리 이력</h2>
+          <ul className="flex flex-col gap-3">
+            {report.adminActions.map((log) => (
+              <li key={log.id} className="text-sm flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{ACTION_LABEL[log.actionType] ?? log.actionType}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {log.admin.nickname} · {log.createdAt.toLocaleDateString("ko-KR")}
+                  </span>
+                </div>
+                {log.note && (
+                  <p className="text-xs text-muted-foreground pl-1">{log.note}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

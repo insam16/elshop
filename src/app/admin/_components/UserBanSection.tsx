@@ -43,10 +43,10 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
           <input type="hidden" name="userId" value={userId} />
           <input type="hidden" name="returnPath" value={returnPath} />
           {unbanState.error && (
-            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{unbanState.error}</p>
+            <p className="form-error">{unbanState.error}</p>
           )}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="label">
               해제 메모 <span className="text-muted-foreground font-normal">(선택)</span>
             </label>
             <textarea
@@ -54,7 +54,7 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
               rows={2}
               maxLength={500}
               placeholder="제재 해제 사유를 남겨주세요."
-              className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+              className="input resize-none"
             />
           </div>
           <div className="flex justify-end">
@@ -77,7 +77,7 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
           <input type="hidden" name="type" value={banType} />
 
           {banState.error && (
-            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{banState.error}</p>
+            <p className="form-error">{banState.error}</p>
           )}
 
           <div className="flex gap-2">
@@ -99,7 +99,7 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
 
           {banType === "temporary" && (
             <div>
-              <label className="block text-sm font-medium mb-1">제한 만료일</label>
+              <label className="label">제한 만료일</label>
               <input
                 type="date"
                 name="bannedUntil"
@@ -111,7 +111,7 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="label">
               제재 메모 <span className="text-muted-foreground font-normal">(선택)</span>
             </label>
             <textarea
@@ -119,7 +119,7 @@ export default function UserBanSection({ userId, isBanned, bannedUntil, returnPa
               rows={2}
               maxLength={500}
               placeholder="제재 사유를 남겨주세요."
-              className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+              className="input resize-none"
             />
           </div>
 

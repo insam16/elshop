@@ -64,16 +64,16 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
         </ul>
       </div>
 
-      <div className="bg-card border border-border-base rounded-xl p-6 flex flex-col gap-5">
+      <div className="card flex flex-col gap-5">
         {state.errors?.general && (
-          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">
+          <p className="form-error">
             {state.errors.general}
           </p>
         )}
 
         {/* 게시판 */}
         <div>
-          <label className="block text-sm font-medium mb-1">게시판</label>
+          <label className="label">게시판</label>
           <select
             name="board"
             value={selectedBoard}
@@ -87,7 +87,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             ))}
           </select>
           {state.errors?.board && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.board}</p>
+            <p className="field-error">{state.errors.board}</p>
           )}
         </div>
 
@@ -96,7 +96,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
           <input type="hidden" name="status" value="OPEN" />
         ) : (
           <div>
-            <label className="block text-sm font-medium mb-1">거래 상태</label>
+            <label className="label">거래 상태</label>
             <select
               name="status"
               defaultValue={defaultValues?.status ?? "OPEN"}
@@ -109,7 +109,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
               ))}
             </select>
             {state.errors?.status && (
-              <p className="text-xs text-red-500 mt-1">{state.errors.status}</p>
+              <p className="field-error">{state.errors.status}</p>
             )}
           </div>
         )}
@@ -134,13 +134,13 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             ))}
           </div>
           {state.errors?.category && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.category}</p>
+            <p className="field-error">{state.errors.category}</p>
           )}
         </div>
 
         {/* 아이템명 가격 수량 */}
         <div>
-          <label className="block text-sm font-medium mb-1">{itemLabel}</label>
+          <label className="label">{itemLabel}</label>
           <input
             type="text"
             name="title"
@@ -150,7 +150,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
           />
           {state.errors?.title && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.title}</p>
+            <p className="field-error">{state.errors.title}</p>
           )}
         </div>
 
@@ -180,7 +180,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             </label>
           </div>
           {state.errors?.negotiable && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.negotiable}</p>
+            <p className="field-error">{state.errors.negotiable}</p>
           )}
         </div>
 
@@ -204,14 +204,14 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             ))}
           </div>
           {state.errors?.tradeMethod && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.tradeMethod}</p>
+            <p className="field-error">{state.errors.tradeMethod}</p>
           )}
         </div>
 
         {/* 거래자 캐릭터명 (일반 게시판만) */}
         {selectedBoard === "GENERAL" && (
           <div>
-            <label className="block text-sm font-medium mb-1">거래자 캐릭터명</label>
+            <label className="label">거래자 캐릭터명</label>
             <input
               type="text"
               name="characterName"
@@ -224,14 +224,14 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
               서버 구분자 포함 가능 (예: 닉네임@S, 닉네임@G)
             </p>
             {state.errors?.characterName && (
-              <p className="text-xs text-red-500 mt-1">{state.errors.characterName}</p>
+              <p className="field-error">{state.errors.characterName}</p>
             )}
           </div>
         )}
 
         {/* 기타 사항 (선택) */}
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="label">
             기타 사항 <span className="text-muted-foreground font-normal">(선택)</span>
           </label>
           <textarea
@@ -243,7 +243,7 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
             className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base resize-none transition-all"
           />
           {state.errors?.content && (
-            <p className="text-xs text-red-500 mt-1">{state.errors.content}</p>
+            <p className="field-error">{state.errors.content}</p>
           )}
         </div>
 

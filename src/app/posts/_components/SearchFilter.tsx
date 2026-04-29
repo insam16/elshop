@@ -62,7 +62,7 @@ export default function SearchFilter() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="제목 또는 내용 검색"
-        className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+        className="input transition-all"
       />
 
       {/* 거래상태 필터 */}

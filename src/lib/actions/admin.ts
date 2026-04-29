@@ -82,10 +82,23 @@ export async function updateCommentReportStatus(
   const report = await prisma.commentReport.findUnique({ where: { id: reportId } });
   if (!report) return { error: "신고를 찾을 수 없습니다." };
 
-  await prisma.commentReport.update({
-    where: { id: reportId },
-    data: { status: status as ReportStatus },
-  });
+  const note = rawNote || null;
+  const actionType =
+    status === ReportStatus.RESOLVED ? AdminActionType.RESOLVE_COMMENT_REPORT :
+    status === ReportStatus.REJECTED ? AdminActionType.REJECT_COMMENT_REPORT :
+    null;
+
+  await prisma.$transaction([
+    prisma.commentReport.update({
+      where: { id: reportId },
+      data: { status: status as ReportStatus },
+    }),
+    ...(actionType
+      ? [prisma.adminAction.create({
+          data: { adminId: session.user.id, actionType, commentReportId: reportId, note },
+        })]
+      : []),
+  ]);
 
   redirect(`/admin/comment-reports/${reportId}`);
 }
@@ -105,10 +118,20 @@ export async function deleteCommentByAdmin(
   if (!comment) return { error: "댓글을 찾을 수 없습니다." };
   if (comment.deletedAt) return { error: "이미 삭제된 댓글입니다." };
 
-  await prisma.comment.update({
-    where: { id: commentId },
-    data: { deletedAt: new Date() },
-  });
+  await prisma.$transaction([
+    prisma.comment.update({
+      where: { id: commentId },
+      data: { deletedAt: new Date() },
+    }),
+    prisma.adminAction.create({
+      data: {
+        adminId: session.user.id,
+        actionType: AdminActionType.DELETE_COMMENT,
+        commentId,
+        commentReportId,
+      },
+    }),
+  ]);
 
   revalidatePath(`/posts/${comment.postId}`);
   redirect(`/admin/comment-reports/${commentReportId}`);
@@ -321,18 +344,53 @@ export async function unbanUser(
   redirect(returnPath);
 }
 
+export async function changeUserRetention(
+  userId: string,
+  years: 1 | 3
+): Promise<{ error?: string }> {
+  const session = await auth();
+  if (!session) redirect("/login");
+  if (session.user.role !== "ADMIN") redirect("/");
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { deletedAt: true, publicId: true },
+  });
+  if (!user?.deletedAt) return { error: "탈퇴한 유저가 아닙니다." };
+
+  const newRetainUntil = new Date(user.deletedAt);
+  newRetainUntil.setFullYear(newRetainUntil.getFullYear() + years);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { retainUntil: newRetainUntil },
+    }),
+    prisma.retainedUser.updateMany({
+      where: { publicId: user.publicId },
+      data: { retainUntil: newRetainUntil },
+    }),
+  ]);
+
+  revalidatePath("/admin/users");
+  return {};
+}
+
 export async function purgeDeletedUser(userId: string): Promise<void> {
   const session = await auth();
   if (!session) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/");
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { deletedAt: true, publicId: true } });
   if (!user?.deletedAt) return;
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { email: null, nickname: null, name: null, image: null, hashedNaverId: null, retainUntil: null },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { email: null, nickname: null, name: null, image: null, hashedNaverId: null, retainUntil: null },
+    }),
+    prisma.retainedUser.deleteMany({ where: { publicId: user.publicId } }),
+  ]);
 
   revalidatePath("/admin/users");
 }
@@ -344,45 +402,18 @@ export async function anonymizeExpiredUsers(): Promise<AnonymizeResult> {
 
   const now = new Date();
 
-  // PII 아직 남아있는 유저 (구 소프트딜리트 방식)
-  const [piiExpired, hashedIdExpired] = await Promise.all([
-    prisma.user.findMany({
-      where: {
-        deletedAt: { not: null },
-        retainUntil: { lt: now },
-        nickname: { not: null },
-      },
-      select: { id: true },
-    }),
-    // hashedNaverId 아직 남아있는 유저 (신고 이력으로 재가입 차단 중이었던 유저)
-    prisma.user.findMany({
-      where: {
-        deletedAt: { not: null },
-        retainUntil: { lt: now },
-        hashedNaverId: { not: null },
-      },
-      select: { id: true },
-    }),
-  ]);
+  const expired = await prisma.retainedUser.findMany({
+    where: { retainUntil: { lt: now } },
+    select: { id: true },
+  });
 
-  const piiIds = piiExpired.map((u) => u.id);
-  const hashedIds = hashedIdExpired.map((u) => u.id);
-  const allIds = [...new Set([...piiIds, ...hashedIds])];
+  if (expired.length === 0) return { count: 0 };
 
-  if (allIds.length === 0) return { count: 0 };
+  const ids = expired.map((r) => r.id);
+  await prisma.retainedUser.deleteMany({ where: { id: { in: ids } } });
 
-  await Promise.all([
-    piiIds.length > 0 && prisma.user.updateMany({
-      where: { id: { in: piiIds } },
-      data: { email: null, nickname: null, name: null, image: null, retainUntil: null },
-    }),
-    hashedIds.length > 0 && prisma.user.updateMany({
-      where: { id: { in: hashedIds } },
-      data: { hashedNaverId: null, retainUntil: null },
-    }),
-  ]);
-
-  return { count: allIds.length };
+  revalidatePath("/admin/users");
+  return { count: ids.length };
 }
 
 export async function hidePost(

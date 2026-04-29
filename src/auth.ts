@@ -24,10 +24,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ account }) {
       if (account?.provider === "naver" && account.providerAccountId) {
         const hashed = hashNaverId(account.providerAccountId);
-        const blocked = await prisma.user.findFirst({
+        const blocked = await prisma.retainedUser.findFirst({
           where: {
             hashedNaverId: hashed,
-            deletedAt: { not: null },
             retainUntil: { gt: new Date() },
           },
         });

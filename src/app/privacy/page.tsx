@@ -3,7 +3,7 @@ export const metadata = { title: "개인정보처리방침 | 엘샵" };
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto">
-      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 28일">
+      <PolicyLayout title="개인정보처리방침" effectiveDate="2026년 4월 29일">
 
         <Section title="1. 수집하는 개인정보">
           <p className="mb-2">서비스는 다음 정보를 수집합니다.</p>
@@ -17,24 +17,14 @@ export default function PrivacyPage() {
             </thead>
             <tbody className="divide-y divide-border-base">
               <tr>
-                <td className="px-3 py-2">네이버 계정 식별자 (암호화)</td>
-                <td className="px-3 py-2">재가입 방지</td>
-                <td className="px-3 py-2">탈퇴 후 30일 보관 후 삭제 (신고 이력 있는 경우 1년 보관)</td>
+                <td className="px-3 py-2">네이버 계정 식별자 (암호화), 탈퇴 전 닉네임</td>
+                <td className="px-3 py-2">재가입 방지 / 부정 이용 방지</td>
+                <td className="px-3 py-2">탈퇴 후 1년 (신고·부정 이용 확인 시 3년)</td>
               </tr>
               <tr>
-                <td className="px-3 py-2">엘소드 닉네임</td>
-                <td className="px-3 py-2">게시판 활동 / 사기 방지</td>
-                <td className="px-3 py-2">탈퇴 후 30일 보관 후 삭제 (신고 이력 있는 경우 1년 보관)</td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2">이메일, 이름, 프로필 이미지</td>
-                <td className="px-3 py-2">회원 식별 (로그인)</td>
-                <td className="px-3 py-2">탈퇴 시 즉시 삭제</td>
-              </tr>
-              <tr>
-                <td className="px-3 py-2">서비스 이용 기록</td>
-                <td className="px-3 py-2">운영·보안</td>
-                <td className="px-3 py-2">1년</td>
+                <td className="px-3 py-2">게시글, 댓글</td>
+                <td className="px-3 py-2">게시판 서비스 제공</td>
+                <td className="px-3 py-2">탈퇴 후에도 유지 (삭제 요청 시 처리)</td>
               </tr>
             </tbody>
           </table>
@@ -87,7 +77,12 @@ export default function PrivacyPage() {
             <li>개인정보 열람 요청</li>
             <li>개인정보 수정·삭제 요청</li>
             <li>개인정보 처리 정지 요청</li>
-            <li>회원 탈퇴 (이메일·이름·이미지는 즉시 삭제, 닉네임·암호화된 식별자는 30일 후 삭제)</li>
+            <li>
+              회원 탈퇴 — 탈퇴 시 닉네임은 <strong>탈퇴#식별자</strong> 형태로 익명화되며,
+              암호화된 계정 식별자와 탈퇴 전 닉네임은 별도 보안 저장소에 보관됩니다.
+              (일반: 1년 / 신고·부정 이용 확인 시: 3년)
+            </li>
+            <li>게시글·댓글은 탈퇴 후에도 유지되며, 별도 삭제를 요청할 수 있습니다.</li>
           </ul>
           <p className="mt-2">권리 행사는 서비스 내 기능 또는 관리자 이메일로 요청할 수 있습니다.</p>
         </Section>
@@ -115,6 +110,25 @@ export default function PrivacyPage() {
           </ul>
         </Section>
 
+        <Section title="11. 부정 이용 방지를 위한 정보 보관">
+          <p className="mb-2">
+            회사는 부정 이용 방지 및 분쟁 대응, 수사 협조를 위하여 외부 인증 서비스로부터 제공받은 이용자
+            식별자를 암호화하여 보관할 수 있습니다.
+          </p>
+          <p className="mb-2">
+            또한 동일 이용자의 재가입 방지 및 사기 이력 확인을 위하여 필요한 경우에 한하여, 이전 닉네임 등
+            식별 가능 정보의 일부를 최소한의 범위 내에서 제한적으로 보관할 수 있습니다.
+          </p>
+          <ul>
+            <li>일반 이용자의 경우: 탈퇴 후 최대 1년</li>
+            <li>신고 또는 부정 이용이 확인된 경우: 분쟁 대응 및 수사 협조를 위하여 최대 3년까지 보관될 수 있습니다.</li>
+          </ul>
+          <p className="mt-2">
+            해당 정보는 일반 서비스 이용 정보와 분리된 별도의 저장소에 안전하게 보관되며, 접근 권한이
+            제한됩니다. 보관 기간 경과 시 해당 정보는 지체 없이 파기됩니다.
+          </p>
+        </Section>
+
       </PolicyLayout>
     </div>
   );
@@ -130,7 +144,7 @@ function PolicyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border-base rounded-xl p-6 md:p-8">
+    <div className="card md:p-8">
       <h1 className="text-2xl font-bold mb-1">{title}</h1>
       <p className="text-sm text-muted-foreground mb-8">시행일: {effectiveDate}</p>
       <div className="flex flex-col gap-6">{children}</div>

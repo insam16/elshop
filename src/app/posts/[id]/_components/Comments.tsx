@@ -74,7 +74,7 @@ export default function Comments({ postId, comments, currentUserId, isAdmin }: P
             rows={3}
             maxLength={500}
             placeholder="댓글을 입력하세요 (최대 500자)"
-            className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+            className="input resize-none"
           />
           <div className="flex justify-end">
             <button
@@ -262,7 +262,7 @@ function ReplyForm({
         rows={2}
         maxLength={500}
         placeholder="답글을 입력하세요 (최대 500자)"
-        className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+        className="input resize-none"
       />
       <div className="flex justify-end">
         <button

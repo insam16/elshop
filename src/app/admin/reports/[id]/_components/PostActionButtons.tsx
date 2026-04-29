@@ -26,7 +26,7 @@ export default function PostActionButtons({ reportId, postId, isHidden }: Props)
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="label">
           처리 메모 <span className="text-muted-foreground font-normal">(선택)</span>
         </label>
         <textarea
@@ -34,7 +34,7 @@ export default function PostActionButtons({ reportId, postId, isHidden }: Props)
           rows={2}
           maxLength={500}
           placeholder="숨김/복구 사유를 남겨주세요."
-          className="w-full border border-border-base rounded-lg px-3 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary-base resize-none"
+          className="input resize-none"
         />
       </div>
       <div className="flex gap-2 justify-end">

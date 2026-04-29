@@ -32,7 +32,7 @@ export default function CommentActionButtons({ commentReportId, commentId, isDel
   return (
     <div className="flex flex-col gap-2">
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+        <p className="form-error">{error}</p>
       )}
       <div>
         <button
