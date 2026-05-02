@@ -146,3 +146,46 @@ export async function requestPostDeletion(
     return { error: "요청 처리 중 오류가 발생했습니다." };
   }
 }
+
+export type CommentDeleteRequestState = {
+  success?: boolean;
+  error?: string;
+};
+
+export async function requestCommentDeletion(
+  _prev: CommentDeleteRequestState,
+  formData: FormData
+): Promise<CommentDeleteRequestState> {
+  const session = await auth();
+  if (!session) redirect("/login");
+
+  const commentId = (formData.get("commentId") as string | null)?.trim() ?? "";
+  const reason = (formData.get("reason") as string | null)?.trim().slice(0, 500) ?? "";
+
+  if (!commentId) return { error: "댓글 ID가 누락되었습니다." };
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId, deletedAt: null },
+    select: { authorId: true, postId: true },
+  });
+
+  if (!comment) return { error: "댓글을 찾을 수 없습니다." };
+  if (comment.authorId !== session.user.id) return { error: "본인 댓글만 삭제 요청할 수 있습니다." };
+
+  try {
+    await prisma.commentReport.create({
+      data: {
+        reporterId: session.user.id,
+        commentId,
+        reason: ReportReason.OTHER,
+        detail: `[작성자 삭제 요청] ${reason}`.trim(),
+      },
+    });
+    revalidatePath(`/posts/${comment.postId}`);
+    return { success: true };
+  } catch (e: unknown) {
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") return { error: "이미 삭제 요청한 댓글입니다." };
+    return { error: "요청 처리 중 오류가 발생했습니다." };
+  }
+}

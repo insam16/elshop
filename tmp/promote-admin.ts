@@ -14,7 +14,7 @@ async function main() {
   try {
     const user = await prisma.user.update({
       where: { nickname },
-      data: { role: "ADMIN", nickname: "늘춍" },
+      data: { role: "ADMIN", nickname: "관리자#늘춍" },
     });
 
     console.log(`Success: User "${user.nickname}" (${user.id}) has been promoted to ADMIN.`);

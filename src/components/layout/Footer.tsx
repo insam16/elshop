@@ -16,7 +16,7 @@ export default function Footer() {
           </Link>
         </nav>
         <p className="text-xs text-muted-foreground">
-          © 2026 엘샵. 엘소드 유저 거래 게시판
+          © 2026 엘샵. 엘소드 유저 거래 게시판 · <Link href="/notice/3" className="hover:text-foreground transition-colors">v1.6</Link>
         </p>
       </div>
     </footer>

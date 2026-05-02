@@ -13,7 +13,7 @@ export default function Notice1Page() {
 
       <div className="card">
         <h1 className="text-xl font-bold mb-1">엘샵 오픈 안내드립니다</h1>
-        <p className="text-sm text-muted-foreground mb-6">2026-04-28 15:00 · 늘춍</p>
+        <p className="text-sm text-muted-foreground mb-6">2026-04-28 15:00 · 관리자#늘춍</p>
 
         <div className="text-sm leading-relaxed flex flex-col gap-4 text-foreground">
           <p>안녕하세요.<br />엘샵을 개발한 늘춍입니다.</p>

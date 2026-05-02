@@ -1,25 +1,7 @@
 import Link from "next/link";
+import { notices } from "@/lib/data/notices";
 
 export const metadata = { title: "공지사항 | 엘샵" };
-
-const notices = [
-  {
-    id: 2,
-    date: "2026.04.29",
-    title: "사기 예방 가이드",
-    href: "/notice/2",
-    external: false,
-    important: true,
-  },
-  {
-    id: 1,
-    date: "2026.04.28",
-    title: "엘샵 오픈 안내드립니다",
-    href: "/notice/1",
-    external: false,
-    important: false,
-  },
-];
 
 const sorted = [...notices].sort((a, b) => b.id - a.id);
 const pinned = sorted.filter((n) => n.important);

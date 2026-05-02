@@ -26,7 +26,7 @@ export async function createComment(
     const recentCount = await prisma.comment.count({
       where: { authorId: session.user.id, createdAt: { gt: oneDayAgo }, deletedAt: null },
     });
-    if (recentCount >= 2) return { error: "미인증 계정은 하루에 댓글을 2개까지만 작성할 수 있습니다." };
+    if (recentCount >= 3) return { error: "인증대기 계정은 하루에 댓글을 3개까지만 작성할 수 있습니다." };
   }
 
   const banMessage = await checkAndExpireBan(session.user.id);
@@ -67,6 +67,56 @@ export async function createComment(
 
   revalidatePath(`/posts/${postId}`);
   return {};
+}
+
+// ─── 댓글 연락하기 (판매자) ────────────────────
+
+export type ContactCommentResult = { contact: string } | { error: string };
+
+export async function contactComment(commentId: string): Promise<ContactCommentResult> {
+  const session = await auth();
+  if (!session) redirect("/login");
+
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId, deletedAt: null },
+    select: { contact: true, postId: true, parentId: true },
+  });
+
+  if (!comment) return { error: "댓글을 찾을 수 없습니다." };
+  if (comment.contact === null) return { error: "연락처가 없습니다." };
+  if (comment.parentId !== null) return { error: "답글에는 연락처를 남길 수 없습니다." };
+
+  const post = await prisma.post.findUnique({
+    where: { id: comment.postId, deletedAt: null },
+    select: { authorId: true, status: true },
+  });
+
+  if (!post) return { error: "게시글을 찾을 수 없습니다." };
+  if (post.authorId !== session.user.id) return { error: "게시글 작성자만 사용할 수 있습니다." };
+  if (post.status !== "ACTIVE" && post.status !== "RESERVED") return { error: "거래 가능 상태에서만 사용할 수 있습니다." };
+
+  const capturedContact = comment.contact;
+
+  try {
+    await prisma.$transaction([
+      prisma.comment.create({
+        data: { content: "연락드렸어요", authorId: session.user.id, postId: comment.postId, parentId: commentId },
+      }),
+      prisma.post.update({
+        where: { id: comment.postId },
+        data: { status: "RESERVED", contact: null },
+      }),
+      prisma.comment.update({
+        where: { id: commentId },
+        data: { contact: null },
+      }),
+    ]);
+  } catch (e: unknown) {
+    return { error: "처리 중 오류가 발생했습니다." };
+  }
+
+  revalidatePath(`/posts/${comment.postId}`);
+  return { contact: capturedContact };
 }
 
 export async function deleteComment(

@@ -7,6 +7,8 @@ import { formatDate } from "@/lib/utils/date";
 import ReportModal from "../_components/ReportModal";
 import DeleteRequestModal from "../_components/DeleteRequestModal";
 import Comments from "./_components/Comments";
+import ContactSection from "./_components/ContactSection";
+import CompletePostButton from "./_components/CompletePostButton";
 
 export default async function PostDetailPage({
   params,
@@ -40,13 +42,19 @@ export default async function PostDetailPage({
 
   if (!post) notFound();
 
-  // TEMP 작성자의 게시글은 24시간 후 만료
-  if (post.author.role === "TEMP") {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    if (post.createdAt < twentyFourHoursAgo) notFound();
-  }
-
   const isAuthor = session.user.id === post.author.id;
+  const isActive = post.status === "ACTIVE" || post.status === "RESERVED";
+
+  // contact는 클라이언트에 노출하지 않음 — hasContact boolean만 전달
+  const hasContact = post.contact !== null;
+  const viewerHasContact = !isAuthor && post.comments.some(
+    c => c.author.id === session.user.id && c.contact !== null
+  );
+  const comments = post.comments.map(({ contact: _c, ...c }) => ({
+    ...c,
+    hasContact: _c !== null,
+    replies: c.replies.map(({ contact: _rc, ...r }) => ({ ...r })),
+  }));
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
@@ -99,6 +107,13 @@ export default async function PostDetailPage({
               <span>{post.characterName}</span>
             </div>
           )}
+          {/* 판매자에게만 자신의 연락처 표시 (ACTIVE 상태에서만) */}
+          {isAuthor && post.status === "ACTIVE" && post.contact && (
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-20 shrink-0">내 연락처</span>
+              <span className="break-all">{post.contact}</span>
+            </div>
+          )}
         </div>
 
         {/* 기타 사항 */}
@@ -111,32 +126,56 @@ export default async function PostDetailPage({
           </div>
         )}
 
+        {/* 상태 안내 */}
+        {post.status === "COMPLETED" && (
+          <p className="text-sm text-muted-foreground text-center py-2 mb-4">거래 완료된 게시글입니다.</p>
+        )}
+        {post.status === "EXPIRED" && (
+          <p className="text-sm text-muted-foreground text-center py-2 mb-4">만료된 게시글입니다.</p>
+        )}
+
         {/* 하단 버튼 */}
         <div className="flex justify-between items-center">
           {isAuthor ? (
             <div className="flex items-center gap-2">
-              <Link
-                href={`/posts/${id}/edit`}
-                className="text-sm border border-border-base px-3 py-1 rounded hover:bg-muted transition-colors"
-              >
-                수정
-              </Link>
+              {isActive && (
+                <Link
+                  href={`/posts/${id}/edit`}
+                  className="text-sm border border-border-base px-3 py-1 rounded hover:bg-muted transition-colors"
+                >
+                  수정
+                </Link>
+              )}
+              {post.status === "RESERVED" && <CompletePostButton postId={id} />}
               <DeleteRequestModal postId={id} />
             </div>
           ) : (
             <div />
           )}
-          {session && !isAuthor && <ReportModal postId={id} />}
+          {!isAuthor && <ReportModal postId={id} />}
         </div>
       </div>
+
+      {/* 구매자 연락 섹션 */}
+      {!isAuthor && isActive && session.user.role !== "ADMIN" && (
+        <ContactSection
+          postId={id}
+          hasContact={hasContact}
+          status={post.status}
+          userRole={session.user.role}
+          viewerHasContact={viewerHasContact}
+        />
+      )}
 
       {/* 댓글 */}
       <div className="card">
         <Comments
           postId={id}
-          comments={post.comments}
+          comments={comments}
           currentUserId={session?.user.id}
           isAdmin={session?.user.role === "ADMIN"}
+          postStatus={post.status}
+          isPostAuthor={isAuthor}
         />
       </div>
     </div>

@@ -20,6 +20,7 @@ export default async function EditPostPage({
   if (!post) notFound();
   if (!session) redirect("/login");
   if (post.authorId !== session.user.id) redirect(`/posts/${id}`);
+  if (post.status !== "ACTIVE" && post.status !== "RESERVED") redirect(`/posts/${id}`);
 
   const action = updatePost.bind(null, id);
 
@@ -37,6 +38,7 @@ export default async function EditPostPage({
           negotiable: post.negotiable,
           tradeMethod: post.tradeMethod,
           characterName: post.characterName,
+          contact: post.contact,
         }}
         submitLabel="수정 완료"
       />

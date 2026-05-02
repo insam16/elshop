@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useActionState, useTransition, useRef, useState, useEffect } from "react";
-import { createComment, deleteComment, type CommentState } from "@/lib/actions/comment";
+import { createComment, deleteComment, contactComment, type CommentState } from "@/lib/actions/comment";
+import { completePost } from "@/lib/actions/post";
 import { formatDate } from "@/lib/utils/date";
 import CommentReportModal from "@/app/posts/_components/CommentReportModal";
+import CommentDeleteRequestModal from "@/app/posts/_components/CommentDeleteRequestModal";
 
 type Author = { id: string; publicId: string; nickname: string | null; name: string | null };
 
@@ -21,6 +23,7 @@ type Comment = {
   createdAt: Date;
   author: Author;
   replies: Reply[];
+  hasContact?: boolean;
 };
 
 type Props = {
@@ -28,9 +31,11 @@ type Props = {
   comments: Comment[];
   currentUserId?: string;
   isAdmin?: boolean;
+  postStatus?: string;
+  isPostAuthor?: boolean;
 };
 
-export default function Comments({ postId, comments, currentUserId, isAdmin }: Props) {
+export default function Comments({ postId, comments, currentUserId, isAdmin, postStatus, isPostAuthor }: Props) {
   const topLevelAction = createComment.bind(null, postId, null);
   const [state, formAction, isPending] = useActionState<CommentState, FormData>(topLevelAction, {});
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,6 +45,8 @@ export default function Comments({ postId, comments, currentUserId, isAdmin }: P
   if (!prevError && !isPending) formRef.current?.reset();
 
   const totalCount = comments.reduce((acc, c) => acc + 1 + c.replies.length, 0);
+
+  const canComment = !postStatus || postStatus === "ACTIVE" || postStatus === "RESERVED";
 
   return (
     <section className="flex flex-col gap-4">
@@ -58,6 +65,8 @@ export default function Comments({ postId, comments, currentUserId, isAdmin }: P
               postId={postId}
               currentUserId={currentUserId}
               isAdmin={isAdmin}
+              postStatus={postStatus}
+              isPostAuthor={isPostAuthor}
               activeReplyId={activeReplyId}
               onReplyClick={(id) => setActiveReplyId(activeReplyId === id ? null : id)}
               onReplySuccess={() => setActiveReplyId(null)}
@@ -66,7 +75,7 @@ export default function Comments({ postId, comments, currentUserId, isAdmin }: P
         </ul>
       )}
 
-      {currentUserId ? (
+      {currentUserId && canComment ? (
         <form ref={formRef} action={formAction} className="flex flex-col gap-2">
           {state.error && <p className="text-xs text-red-500">{state.error}</p>}
           <textarea
@@ -86,11 +95,11 @@ export default function Comments({ postId, comments, currentUserId, isAdmin }: P
             </button>
           </div>
         </form>
-      ) : (
+      ) : !currentUserId ? (
         <p className="text-sm text-muted-foreground text-center py-2">
           댓글을 작성하려면 로그인이 필요합니다.
         </p>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -100,6 +109,8 @@ function CommentItem({
   postId,
   currentUserId,
   isAdmin,
+  postStatus,
+  isPostAuthor,
   activeReplyId,
   onReplyClick,
   onReplySuccess,
@@ -108,19 +119,45 @@ function CommentItem({
   postId: number;
   currentUserId?: string;
   isAdmin?: boolean;
+  postStatus?: string;
+  isPostAuthor?: boolean;
   activeReplyId: string | null;
   onReplyClick: (id: string) => void;
   onReplySuccess: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
-  const canDelete = currentUserId === comment.author.id || isAdmin;
+  const [sellerContactPending, setSellerContactPending] = useState(false);
+  const [revealedContact, setRevealedContact] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const isAuthor = currentUserId === comment.author.id;
   const isReplyOpen = activeReplyId === comment.id;
+
+  const showSellerContactButton =
+    isPostAuthor &&
+    comment.hasContact &&
+    (postStatus === "ACTIVE" || postStatus === "RESERVED") &&
+    currentUserId !== comment.author.id;
 
   function handleDelete() {
     if (!confirm("댓글을 삭제할까요?")) return;
     startTransition(async () => {
       await deleteComment(comment.id, postId);
     });
+  }
+
+  async function handleSellerContact() {
+    if (sellerContactPending) return;
+    setSellerContactPending(true);
+    try {
+      const result = await contactComment(comment.id);
+      if ("contact" in result) {
+        setRevealedContact(result.contact);
+      } else {
+        setContactError(result.error);
+      }
+    } finally {
+      setSellerContactPending(false);
+    }
   }
 
   return (
@@ -141,10 +178,13 @@ function CommentItem({
                 {isReplyOpen ? "취소" : "답글"}
               </button>
             )}
-            {currentUserId && currentUserId !== comment.author.id && (
+            {currentUserId && !isAuthor && (
               <CommentReportModal commentId={comment.id} type="댓글" />
             )}
-            {canDelete && (
+            {isAuthor && !isAdmin && (
+              <CommentDeleteRequestModal commentId={comment.id} type="댓글" />
+            )}
+            {isAdmin && (
               <button
                 onClick={handleDelete}
                 disabled={isPending}
@@ -156,7 +196,43 @@ function CommentItem({
           </div>
         </div>
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+        {showSellerContactButton && (
+          <button
+            onClick={handleSellerContact}
+            disabled={sellerContactPending}
+            className="w-full bg-primary-base text-primary-foreground px-4 py-4 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {sellerContactPending ? "처리 중..." : "지금 연락하기"}
+          </button>
+        )}
+        {comment.content === "연락드렸어요" && isPostAuthor && postStatus !== "COMPLETED" && (
+          <ContactedMessage postId={postId} showComplete />
+        )}
       </div>
+
+      {/* 판매자 연락처 팝업 */}
+      {revealedContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-card rounded-xl border border-border-base shadow-xl w-full max-w-sm p-6 text-foreground">
+            <h2 className="text-base font-bold mb-1">구매자 연락처</h2>
+            <p className="text-xs text-amber-600 mb-4">
+              이 연락처는 다시 확인할 수 없습니다. 저장해두세요.
+            </p>
+            <div className="bg-muted rounded-lg px-4 py-3 text-sm font-medium break-all mb-4">
+              {revealedContact}
+            </div>
+            <button
+              onClick={() => setRevealedContact(null)}
+              className="w-full bg-primary-base text-primary-foreground py-2 rounded-lg text-sm hover:opacity-90 transition-opacity"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+      {contactError && (
+        <p className="text-xs text-red-500">{contactError}</p>
+      )}
 
       {/* 답글 목록 */}
       {comment.replies.length > 0 && (
@@ -168,6 +244,9 @@ function CommentItem({
               postId={postId}
               currentUserId={currentUserId}
               isAdmin={isAdmin}
+              parentCommentAuthorId={comment.author.id}
+              isPostAuthor={isPostAuthor}
+              postStatus={postStatus}
             />
           ))}
         </ul>
@@ -188,14 +267,20 @@ function ReplyItem({
   postId,
   currentUserId,
   isAdmin,
+  parentCommentAuthorId,
+  isPostAuthor,
+  postStatus,
 }: {
   reply: Reply;
   postId: number;
   currentUserId?: string;
   isAdmin?: boolean;
+  parentCommentAuthorId?: string;
+  isPostAuthor?: boolean;
+  postStatus?: string;
 }) {
   const [isPending, startTransition] = useTransition();
-  const canDelete = currentUserId === reply.author.id || isAdmin;
+  const isAuthor = currentUserId === reply.author.id;
 
   function handleDelete() {
     if (!confirm("답글을 삭제할까요?")) return;
@@ -212,10 +297,13 @@ function ReplyItem({
           <span>{formatDate(reply.createdAt)}</span>
         </div>
         <div className="flex items-center gap-2">
-          {currentUserId && currentUserId !== reply.author.id && (
+          {currentUserId && !isAuthor && (
             <CommentReportModal commentId={reply.id} type="답글" />
           )}
-          {canDelete && (
+          {isAuthor && !isAdmin && (
+            <CommentDeleteRequestModal commentId={reply.id} type="답글" />
+          )}
+          {isAdmin && (
             <button
               onClick={handleDelete}
               disabled={isPending}
@@ -227,7 +315,43 @@ function ReplyItem({
         </div>
       </div>
       <p className="text-sm leading-relaxed whitespace-pre-wrap">{reply.content}</p>
+      {reply.content === "연락드렸어요" && (isPostAuthor || currentUserId === parentCommentAuthorId) && postStatus !== "COMPLETED" && (
+        <ContactedMessage postId={postId} showComplete={!!isPostAuthor} />
+      )}
     </li>
+  );
+}
+
+function ContactedMessage({ postId, showComplete }: { postId: number; showComplete: boolean }) {
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleComplete() {
+    if (!confirm("거래완료로 변경하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+    setIsPending(true);
+    try {
+      const result = await completePost(postId);
+      if (!result.success && result.error) alert(result.error);
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  return (
+    <div className="bg-primary-base/10 border border-primary-base/30 rounded-lg px-3 py-2 flex flex-col gap-1.5 text-xs">
+      <p className="text-sm font-semibold text-primary-base">카카오톡 오픈채팅을 확인해주세요!</p>
+      {showComplete && (
+        <p className="text-muted-foreground">
+          혹시 거래를 완료하셨나요? 거래완료를 눌러주세요.{" "}
+          <button
+            onClick={handleComplete}
+            disabled={isPending}
+            className="text-primary-base font-semibold hover:underline disabled:opacity-50"
+          >
+            {isPending ? "처리 중..." : "[거래완료]"}
+          </button>
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -251,7 +375,7 @@ function ReplyForm({
       formRef.current.reset();
       onSuccess();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, isPending]);
 
   return (

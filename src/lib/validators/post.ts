@@ -9,6 +9,7 @@ export type PostFormData = {
   negotiable: string;
   tradeMethod: string;
   characterName: string;
+  contact: string;
 };
 
 export type PostValidationError = {
@@ -20,6 +21,7 @@ export type PostValidationError = {
   negotiable?: string;
   tradeMethod?: string;
   characterName?: string;
+  contact?: string;
 };
 
 // 한글=2, 나머지=1
@@ -127,6 +129,14 @@ export function validatePost(data: PostFormData): PostValidationError | null {
     if (charErr) errors.characterName = charErr;
   }
 
+  if (!data.contact.trim()) {
+    errors.contact = "연락처를 입력해주세요.";
+  } else if (!data.contact.trim().startsWith("https://open.kakao.com/")) {
+    errors.contact = "카카오톡 오픈채팅 링크(https://open.kakao.com/...)만 입력할 수 있습니다.";
+  } else if (data.contact.trim().length > 200) {
+    errors.contact = "연락처는 200자 이내로 입력해주세요.";
+  }
+
   return Object.keys(errors).length > 0 ? errors : null;
 }
 
@@ -151,9 +161,10 @@ export const CATEGORY_LABEL: Record<PostCategory, string> = {
 };
 
 export const STATUS_LABEL: Record<PostStatus, string> = {
-  OPEN: "거래 가능",
+  ACTIVE: "거래 가능",
   RESERVED: "예약",
   COMPLETED: "거래 완료",
+  EXPIRED: "만료됨",
 };
 
 export const CATEGORY_BADGE: Record<PostCategory, string> = {
@@ -163,7 +174,8 @@ export const CATEGORY_BADGE: Record<PostCategory, string> = {
 };
 
 export const STATUS_BADGE: Record<PostStatus, string> = {
-  OPEN: "bg-teal-500 text-white",
+  ACTIVE: "bg-teal-500 text-white",
   RESERVED: "bg-amber-500 text-white",
   COMPLETED: "bg-gray-400 text-white",
+  EXPIRED: "bg-gray-300 text-gray-600",
 };

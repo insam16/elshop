@@ -27,6 +27,7 @@ type Props = {
     negotiable?: boolean;
     tradeMethod?: string;
     characterName?: string | null;
+    contact?: string | null;
   };
   hideStatus?: boolean;
   submitLabel?: string;
@@ -93,16 +94,16 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
 
         {/* 거래 상태 */}
         {hideStatus ? (
-          <input type="hidden" name="status" value="OPEN" />
+          <input type="hidden" name="status" value="ACTIVE" />
         ) : (
           <div>
             <label className="label">거래 상태</label>
             <select
               name="status"
-              defaultValue={defaultValues?.status ?? "OPEN"}
+              defaultValue={defaultValues?.status ?? "ACTIVE"}
               className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
             >
-              {Object.values(PostStatus).map((s) => (
+              {Object.values(PostStatus).filter(s => s !== "EXPIRED").map((s) => (
                 <option key={s} value={s}>
                   {STATUS_LABEL[s]}
                 </option>
@@ -205,6 +206,26 @@ export default function PostForm({ action, defaultValues, hideStatus = false, su
           </div>
           {state.errors?.tradeMethod && (
             <p className="field-error">{state.errors.tradeMethod}</p>
+          )}
+        </div>
+
+        {/* 연락처 */}
+        <div>
+          <label className="label">연락처</label>
+          <input
+            type="text"
+            name="contact"
+            defaultValue={defaultValues?.contact ?? ""}
+            maxLength={50}
+            placeholder="https://open.kakao.com/..."
+            className="w-full bg-card border border-border-base rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base transition-all"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            구매자가 "지금 연락하기" 버튼을 누르면 1회 공개됩니다.
+            1회 공개 후 연락처는 자동으로 삭제됩니다.
+          </p>
+          {state.errors?.contact && (
+            <p className="field-error">{state.errors.contact}</p>
           )}
         </div>
 

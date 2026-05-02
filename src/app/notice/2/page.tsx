@@ -32,7 +32,7 @@ export default function Notice2Page() {
 
       <div className="card">
         <h1 className="text-xl font-bold mb-1">사기 예방 가이드</h1>
-        <p className="text-sm text-muted-foreground mb-6">2026-04-29 15:00 · 늘춍</p>
+        <p className="text-sm text-muted-foreground mb-6">2026-04-29 15:00 · 관리자#늘춍</p>
 
         <div className="text-sm leading-relaxed flex flex-col gap-6 text-foreground">
 

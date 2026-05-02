@@ -6,109 +6,36 @@ datasource db {
   provider = "postgresql"
 }
 
-// ───────────────────────────────────────────
-// Enums
-// ───────────────────────────────────────────
-
-enum Role {
-  TEMP  // 미인증 (읽기 전용)
-  USER  // 인증 완료
-  ADMIN // 관리자
-}
-
-enum PostBoard {
-  CREDIT   // 신용 (아이템-현금)
-  ED       // ED (ED-현금)
-  GENERAL  // 일반 (아이템-게임머니)
-  OTHER    // 기타
-}
-
-enum PostCategory {
-  SELL  // 판매
-  BUY   // 구매
-  TRADE // 교환
-}
-
-enum PostStatus {
-  OPEN      // 거래 가능
-  RESERVED  // 예약
-  COMPLETED // 거래 완료
-}
-
-enum ReportReason {
-  FRAUD         // 사기
-  FALSE_INFO    // 허위 정보
-  INAPPROPRIATE // 부적절한 내용
-  IMPERSONATION // 타인 사칭
-  OTHER         // 기타
-}
-
-enum ReportStatus {
-  PENDING    // 접수 대기
-  REVIEWING  // 검토 중
-  RESOLVED   // 처리 완료
-  REJECTED   // 반려
-}
-
-enum AdminActionType {
-  DELETE_POST            // 게시글 삭제
-  RESTORE_POST           // 게시글 복구
-  RESOLVE_REPORT         // 게시글 신고 처리 완료
-  REJECT_REPORT          // 게시글 신고 반려
-  BAN_USER               // 사용자 제재
-  UNBAN_USER             // 제재 해제
-  APPROVE_USER           // 인증 승인
-  REJECT_USER            // 인증 거절
-  DELETE_COMMENT         // 댓글 삭제
-  RESOLVE_COMMENT_REPORT // 댓글 신고 처리 완료
-  REJECT_COMMENT_REPORT  // 댓글 신고 반려
-}
-
-enum NotificationType {
-  COMMENT_ON_MY_POST   // 내 게시글에 댓글
-  REPLY_TO_MY_COMMENT  // 내 댓글에 답글
-  KEYWORD_MATCH        // 키워드 알림
-  NICKNAME_CHANGED     // 닉네임 강제 변경 (게임 닉네임 소유자 변경)
-}
-
-// ───────────────────────────────────────────
-// Models
-// ───────────────────────────────────────────
-
 model User {
-  id            String    @id @default(cuid())
-  publicId      String    @unique
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  nickname      String?   @unique
-  role          Role      @default(TEMP)
-  createdAt     DateTime  @default(now())
-  deletedAt     DateTime?
-  retainUntil   DateTime?
-  isBanned      Boolean   @default(false)
-  bannedUntil   DateTime?
-  hashedNaverId String?   @unique
-
-  accounts        Account[]
-  sessions        Session[]
-  posts           Post[]
-  comments        Comment[]
-  reports         Report[]         @relation("Reporter")
-  commentReports  CommentReport[]  @relation("CommentReporter")
-  adminActions    AdminAction[]    @relation("AdminActionPerformer")
-  sanctionActions AdminAction[]    @relation("AdminActionTarget")
-
-  notificationsReceived Notification[]      @relation("NotificationReceiver")
-  notificationsActed    Notification[]      @relation("NotificationActor")
+  id                    String                @id @default(cuid())
+  publicId              String                @unique
+  name                  String?
+  email                 String?               @unique
+  emailVerified         DateTime?
+  image                 String?
+  nickname              String?               @unique
+  role                  Role                  @default(TEMP)
+  createdAt             DateTime              @default(now())
+  deletedAt             DateTime?
+  retainUntil           DateTime?
+  isBanned              Boolean               @default(false)
+  bannedUntil           DateTime?
+  hashedNaverId         String?               @unique
+  accounts              Account[]
+  adminActions          AdminAction[]         @relation("AdminActionPerformer")
+  sanctionActions       AdminAction[]         @relation("AdminActionTarget")
+  commentReports        CommentReport[]       @relation("CommentReporter")
+  comments              Comment[]
   notificationKeywords  NotificationKeyword[]
+  notificationsActed    Notification[]        @relation("NotificationActor")
+  notificationsReceived Notification[]        @relation("NotificationReceiver")
+  posts                 Post[]
+  reports               Report[]              @relation("Reporter")
+  sessions              Session[]
 
   @@index([email])
   @@map("users")
 }
-
-// ─── Auth.js 필수 모델 ───────────────────────
 
 model Account {
   id                String  @id @default(cuid())
@@ -116,15 +43,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -135,8 +61,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -151,28 +76,29 @@ model VerificationToken {
 }
 
 model Post {
-  id            Int          @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   title         String
   content       String?
-  board         PostBoard    @default(GENERAL)
+  board         PostBoard      @default(GENERAL)
   category      PostCategory
-  status        PostStatus   @default(OPEN)
-  negotiable    Boolean      @default(false)
-  tradeMethod   String       @default("OTHER")
-  characterName String?
+  status        PostStatus     @default(ACTIVE)
   authorId      String
-  isPremium     Boolean      @default(false)
+  isPremium     Boolean        @default(false)
   premiumUntil  DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
-
-  author        User           @relation(fields: [authorId], references: [id])
-  images        PostImage[]
-  comments      Comment[]
-  reports       Report[]
+  characterName String?
+  negotiable    Boolean        @default(false)
+  tradeMethod   String         @default("OTHER")
+  contact       String?
+  expiresAt     DateTime?
   adminActions  AdminAction[]
+  comments      Comment[]
   notifications Notification[]
+  images        PostImage[]
+  author        User           @relation(fields: [authorId], references: [id])
+  reports       Report[]
 
   @@index([authorId])
   @@index([deletedAt, createdAt(sort: Desc)])
@@ -188,29 +114,28 @@ model PostImage {
   url       String
   order     Int      @default(0)
   createdAt DateTime @default(now())
-
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@map("post_images")
 }
 
 model Comment {
-  id        String    @id @default(cuid())
-  content   String
-  authorId  String
-  postId    Int
-  parentId  String?
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
-
-  author        User           @relation(fields: [authorId], references: [id])
-  post          Post           @relation(fields: [postId], references: [id])
-  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id])
-  replies       Comment[]      @relation("CommentReplies")
-  notifications Notification[]
-  reports       CommentReport[]
+  id            String          @id @default(cuid())
+  content       String
+  authorId      String
+  postId        Int
+  parentId      String?
+  createdAt     DateTime        @default(now())
+  deletedAt     DateTime?
+  contact       String?
   adminActions  AdminAction[]
+  reports       CommentReport[]
+  author        User            @relation(fields: [authorId], references: [id])
+  parent        Comment?        @relation("CommentReplies", fields: [parentId], references: [id])
+  replies       Comment[]       @relation("CommentReplies")
+  post          Post            @relation(fields: [postId], references: [id])
+  notifications Notification[]
 
   @@index([postId])
   @@index([parentId])
@@ -218,17 +143,16 @@ model Comment {
 }
 
 model Report {
-  id         String       @id @default(cuid())
-  reporterId String
-  postId     Int
-  reason     ReportReason
-  detail     String?
-  status     ReportStatus @default(PENDING)
-  createdAt  DateTime     @default(now())
-
-  reporter     User          @relation("Reporter", fields: [reporterId], references: [id])
-  post         Post          @relation(fields: [postId], references: [id])
+  id           String        @id @default(cuid())
+  reporterId   String
+  postId       Int
+  reason       ReportReason
+  detail       String?
+  status       ReportStatus  @default(PENDING)
+  createdAt    DateTime      @default(now())
   adminActions AdminAction[]
+  post         Post          @relation(fields: [postId], references: [id])
+  reporter     User          @relation("Reporter", fields: [reporterId], references: [id])
 
   @@unique([reporterId, postId])
   @@index([postId])
@@ -237,24 +161,22 @@ model Report {
 }
 
 model AdminAction {
-  id         String          @id @default(cuid())
-  adminId    String
-  actionType AdminActionType
-  note       String?
-  createdAt  DateTime        @default(now())
-
+  id              String          @id @default(cuid())
+  adminId         String
+  actionType      AdminActionType
+  note            String?
+  createdAt       DateTime        @default(now())
   postId          Int?
   reportId        String?
+  targetUserId    String?
   commentId       String?
   commentReportId String?
-  targetUserId    String?
-
-  admin         User           @relation("AdminActionPerformer", fields: [adminId], references: [id])
-  post          Post?          @relation(fields: [postId], references: [id])
-  report        Report?        @relation(fields: [reportId], references: [id])
-  comment       Comment?       @relation(fields: [commentId], references: [id])
-  commentReport CommentReport? @relation(fields: [commentReportId], references: [id])
-  targetUser    User?          @relation("AdminActionTarget", fields: [targetUserId], references: [id])
+  admin           User            @relation("AdminActionPerformer", fields: [adminId], references: [id])
+  comment         Comment?        @relation(fields: [commentId], references: [id])
+  commentReport   CommentReport?  @relation(fields: [commentReportId], references: [id])
+  post            Post?           @relation(fields: [postId], references: [id])
+  report          Report?         @relation(fields: [reportId], references: [id])
+  targetUser      User?           @relation("AdminActionTarget", fields: [targetUserId], references: [id])
 
   @@index([adminId])
   @@index([postId])
@@ -267,8 +189,8 @@ model AdminAction {
 
 model Notification {
   id          String           @id @default(cuid())
-  userId      String           // 수신자
-  actorUserId String           // 발신자
+  userId      String
+  actorUserId String
   type        NotificationType
   title       String
   body        String?
@@ -277,11 +199,10 @@ model Notification {
   postId      Int?
   commentId   String?
   createdAt   DateTime         @default(now())
-
-  user    User     @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
-  actor   User     @relation("NotificationActor", fields: [actorUserId], references: [id])
-  post    Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
-  comment Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  actor       User             @relation("NotificationActor", fields: [actorUserId], references: [id])
+  comment     Comment?         @relation(fields: [commentId], references: [id])
+  post        Post?            @relation(fields: [postId], references: [id])
+  user        User             @relation("NotificationReceiver", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isRead])
@@ -294,8 +215,7 @@ model NotificationKeyword {
   keyword   String
   isEnabled Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, keyword])
   @@index([isEnabled])
@@ -321,20 +241,81 @@ model RetainedUser {
 }
 
 model CommentReport {
-  id         String       @id @default(cuid())
-  reporterId String
-  commentId  String
-  reason     ReportReason
-  detail     String?
-  status     ReportStatus @default(PENDING)
-  createdAt  DateTime     @default(now())
-
-  reporter     User          @relation("CommentReporter", fields: [reporterId], references: [id])
-  comment      Comment       @relation(fields: [commentId], references: [id])
+  id           String        @id @default(cuid())
+  reporterId   String
+  commentId    String
+  reason       ReportReason
+  detail       String?
+  status       ReportStatus  @default(PENDING)
+  createdAt    DateTime      @default(now())
   adminActions AdminAction[]
+  comment      Comment       @relation(fields: [commentId], references: [id])
+  reporter     User          @relation("CommentReporter", fields: [reporterId], references: [id])
 
   @@unique([reporterId, commentId])
   @@index([commentId])
   @@index([status])
   @@map("comment_reports")
+}
+
+enum Role {
+  TEMP
+  USER
+  ADMIN
+}
+
+enum PostBoard {
+  CREDIT
+  ED
+  GENERAL
+  OTHER
+}
+
+enum PostCategory {
+  SELL
+  BUY
+  TRADE
+}
+
+enum PostStatus {
+  ACTIVE
+  RESERVED
+  COMPLETED
+  EXPIRED
+}
+
+enum ReportReason {
+  FRAUD
+  FALSE_INFO
+  INAPPROPRIATE
+  IMPERSONATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+enum AdminActionType {
+  DELETE_POST
+  RESTORE_POST
+  RESOLVE_REPORT
+  REJECT_REPORT
+  BAN_USER
+  UNBAN_USER
+  APPROVE_USER
+  REJECT_USER
+  DELETE_COMMENT
+  RESOLVE_COMMENT_REPORT
+  REJECT_COMMENT_REPORT
+}
+
+enum NotificationType {
+  COMMENT_ON_MY_POST
+  REPLY_TO_MY_COMMENT
+  KEYWORD_MATCH
+  NICKNAME_CHANGED
 }

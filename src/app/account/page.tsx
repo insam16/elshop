@@ -61,23 +61,13 @@ export default async function AccountPage() {
       {isTemp && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 space-y-3">
           <p className="text-sm font-semibold text-yellow-800">본캐 인증이 필요합니다</p>
-          <ol className="text-sm text-yellow-700 space-y-1.5 list-decimal list-inside">
-            <li>게임에 접속합니다.</li>
-            <li>채팅창에 오늘 날짜와 본인의 임시 닉네임(<strong>{session.user.nickname}</strong>)을 입력합니다.</li>
-            <li>초상화와 엘소드 닉네임, 캐릭터 창(기본키 U), 채팅창이 보이는 상태에서 스크린샷을 찍습니다.</li>
-            <li>아래 네이버폼에 스크린샷과 캐릭터명을 제출합니다.</li>
-          </ol>
-          <a
-            href="https://naver.me/GJZXxRFd"
-            target="_blank"
-            rel="noopener noreferrer"
+          <p className="text-sm text-yellow-700">인증 후 판매자 연락처 확인 등 모든 기능을 이용할 수 있습니다.</p>
+          <Link
+            href="/verify"
             className="inline-block bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 transition-colors"
           >
-            인증 신청 네이버폼 →
-          </a>
-          <p className="text-xs text-yellow-600">
-            제출 후 관리자 검토를 거쳐 승인되면 캐릭터명으로 닉네임이 변경됩니다.
-          </p>
+            지금 바로 인증하기 →
+          </Link>
         </div>
       )}
 

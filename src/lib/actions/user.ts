@@ -49,12 +49,23 @@ export async function deleteAccount() {
       where: { id: userId },
       data: {
         nickname: `탈퇴#${user.publicId}`,
+        role: "TEMP",
         deletedAt: now,
         retainUntil,
       },
     }),
     // OAuth 연결 해제
     prisma.account.deleteMany({ where: { userId } }),
+    // 거래 가능 게시글 → 만료
+    prisma.post.updateMany({
+      where: { authorId: userId, status: "ACTIVE", deletedAt: null },
+      data: { status: "EXPIRED", contact: null },
+    }),
+    // 예약 게시글 → 거래완료
+    prisma.post.updateMany({
+      where: { authorId: userId, status: "RESERVED", deletedAt: null },
+      data: { status: "COMPLETED", contact: null },
+    }),
   ]);
 
   await signOut({ redirectTo: "/" });

@@ -4,10 +4,11 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BOARD_LABEL, BOARD_DESC, CATEGORY_LABEL, STATUS_LABEL, CATEGORY_BADGE, STATUS_BADGE } from "@/lib/validators/post";
-import { Prisma, PostBoard, PostCategory, PostStatus, Role } from "@prisma/client";
+import { Prisma, PostBoard, PostCategory, PostStatus } from "@prisma/client";
 import { formatDate } from "@/lib/utils/date";
 import SearchFilter from "./_components/SearchFilter";
 import TempUserNotice from "./_components/TempUserNotice";
+import { notices } from "@/lib/data/notices";
 
 const PREMIUM_DISPLAY_LIMIT = 10;
 const REGULAR_PAGE_SIZE = 20;
@@ -71,43 +72,31 @@ export default async function PostsPage({
 
   const baseConditions = buildBaseConditions(q, activeBoard ?? undefined, category, status);
   const now = new Date();
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const premiumWhere: Prisma.PostWhereInput = {
     AND: [...baseConditions, { isPremium: true }, { premiumUntil: { gt: now } }],
   };
 
-  // 일반 게시글: 프리미엄이 아니거나 만료된 것 + 인증 유저만
+  // 일반 게시글: 프리미엄이 아니거나 만료된 것
   const regularWhere: Prisma.PostWhereInput = {
     AND: [
       ...baseConditions,
       { OR: [{ isPremium: false }, { isPremium: true, premiumUntil: { lte: now } }] },
-      { author: { role: { not: Role.TEMP } } },
-    ],
-  };
-
-  // 임시 게시글: TEMP 작성자 + 24시간 이내
-  const tempWhere: Prisma.PostWhereInput = {
-    AND: [
-      ...baseConditions,
-      { isPremium: false },
-      { author: { role: Role.TEMP } },
-      { createdAt: { gt: twentyFourHoursAgo } },
     ],
   };
 
   const includeOpts = {
-    author: { select: { id: true, publicId: true, nickname: true, name: true } },
+    author: { select: { id: true, publicId: true, nickname: true, name: true, role: true } },
     _count: {
       select: { comments: { where: { deletedAt: null } } },
     },
   } as const;
 
-  const [premiumPosts, premiumTotal, regularPosts, regularTotal, tempPosts] = await Promise.all([
+  const [premiumPosts, premiumTotal, regularPosts, regularTotal] = await Promise.all([
     prisma.post.findMany({
       where: premiumWhere,
       include: includeOpts,
-      orderBy: { premiumUntil: "asc" }, // 만료 임박 순으로 상단 노출 우선
+      orderBy: { premiumUntil: "asc" },
       ...(showAll ? {} : { take: PREMIUM_DISPLAY_LIMIT }),
     }),
     prisma.post.count({ where: premiumWhere }),
@@ -119,11 +108,6 @@ export default async function PostsPage({
       take: REGULAR_PAGE_SIZE,
     }),
     prisma.post.count({ where: regularWhere }),
-    prisma.post.findMany({
-      where: tempWhere,
-      include: includeOpts,
-      orderBy: { createdAt: "desc" },
-    }),
   ]);
 
   const totalPages = Math.ceil(regularTotal / REGULAR_PAGE_SIZE);
@@ -145,7 +129,7 @@ export default async function PostsPage({
     return `/posts${qs.size ? `?${qs}` : ""}`;
   }
 
-  const hasAnyPost = premiumPosts.length > 0 || regularPosts.length > 0 || tempPosts.length > 0;
+  const hasAnyPost = premiumPosts.length > 0 || regularPosts.length > 0;
 
   return (
     <div>
@@ -159,6 +143,34 @@ export default async function PostsPage({
           글쓰기
         </Link>
       </div>
+
+      {/* 공지사항 */}
+      {notices.some((n) => n.showInBanner) && (
+        <div className="mb-4 border border-border-base rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border-base">
+            <span className="text-xs font-semibold text-muted-foreground">공지사항</span>
+            <Link href="/notice" className="text-xs text-muted-foreground hover:text-primary-base transition-colors">
+              전체보기 →
+            </Link>
+          </div>
+          <ul>
+            {[...notices].filter((n) => n.showInBanner).sort((a, b) => b.id - a.id).map((notice, idx, arr) => (
+              <li key={notice.id} className={idx < arr.length - 1 ? "border-b border-border-base" : ""}>
+                <Link
+                  href={notice.href}
+                  className="flex items-center gap-2 px-4 py-2.5 hover:bg-muted transition-colors"
+                >
+                  {notice.important && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600 shrink-0">중요</span>
+                  )}
+                  <span className="text-sm truncate flex-1">{notice.title}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{notice.date}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* 게시판 탭 */}
       <div className="flex border-b border-border-base mb-4">
@@ -208,7 +220,7 @@ export default async function PostsPage({
           {premiumPosts.length > 0 && (
             <section className="mb-6">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-sm font-bold text-amber-600">★ 프리미엄 ★ </span>
+                <span className="text-sm font-bold text-violet-600">★ 프리미엄 ★ </span>
                 <span className="text-xs text-muted-foreground">
                   ({showAll ? premiumTotal : Math.min(premiumTotal, PREMIUM_DISPLAY_LIMIT)}건)
                 </span>
@@ -224,7 +236,7 @@ export default async function PostsPage({
                 <div className="mt-2 text-center">
                   <Link
                     href={`/posts?${buildSearchQs({ showAllPremium: "1" })}`}
-                    className="text-xs text-amber-600 hover:text-amber-700 border border-amber-300 bg-amber-50 px-4 py-1.5 rounded-full transition-colors inline-block"
+                    className="text-xs text-violet-600 hover:text-violet-700 border border-violet-300 bg-violet-50 px-4 py-1.5 rounded-full transition-colors inline-block"
                   >
                     프리미엄 상품 더보기 ({premiumTotal}건) ▼
                   </Link>
@@ -313,25 +325,6 @@ export default async function PostsPage({
             </>
           )}
 
-          {/* 임시 게시글 (TEMP 작성자, 24시간 후 자동 삭제) */}
-          {tempPosts.length > 0 && (
-            <section className="mt-6">
-              <div className="border-t border-border-base mb-4" />
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-sm font-bold text-muted-foreground">임시 게시글</span>
-                <span className="text-xs text-muted-foreground">
-                  ({tempPosts.length}건 · 미인증 계정 · 24시간 후 자동 삭제)
-                </span>
-              </div>
-              <ul className="flex flex-col gap-2">
-                {tempPosts.map((post) => (
-                  <li key={post.id}>
-                    <PostRow post={post} temp showBoard={activeBoard === null} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
         </>
       )}
     </div>
@@ -346,29 +339,29 @@ type PostRowProps = {
     category: PostCategory;
     status: PostStatus;
     createdAt: Date;
-    author: { id: string; publicId: string; nickname: string | null; name: string | null };
+    author: { id: string; publicId: string; nickname: string | null; name: string | null; role: string };
     _count: { comments: number };
   } & PostInclude;
   premium?: boolean;
-  temp?: boolean;
   showBoard?: boolean;
 };
 
-function PostRow({ post, premium, temp, showBoard }: PostRowProps) {
+function PostRow({ post, premium, showBoard }: PostRowProps) {
+  const isUser = post.author.role === "USER";
   return (
     <div
       className={`border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${premium
-          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-          : temp
-            ? "bg-gray-100 border-gray-300 dark:bg-gray-900/50 dark:border-gray-700"
-            : "bg-card border-border-base"
+        ? "bg-violet-50 border-violet-200 dark:bg-violet-950/20 dark:border-violet-800"
+        : isUser
+          ? "bg-card border-border-base"
+          : "bg-gray-100 border-gray-300 dark:bg-gray-900/60 dark:border-gray-800 dark:opacity-80"
         }`}
     >
       {/* 배지 + (데스크탑: 제목) + 메타 */}
       <div className="flex items-center justify-between gap-2">
         <Link href={`/posts/${post.id}`} className="flex items-center gap-2 min-w-0 flex-1">
           {premium && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 bg-amber-500 text-white">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 bg-violet-500 text-white">
               프리미엄
             </span>
           )}
