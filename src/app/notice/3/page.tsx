@@ -89,6 +89,14 @@ export default function Notice3Page() {
             이용 중 불편한 점이나 버그가 있으면 언제든지 알려주세요.<br />
             감사합니다.
           </p>
+
+          {/* 이후 수정 사항 */}
+          <div className="flex flex-col gap-2">
+            <p className="font-semibold text-base">이후 수정 사항</p>
+            <ul className="list-disc list-inside flex flex-col gap-1 text-muted-foreground pl-2">
+              <li>05/04: 게시글 상태(완료/만료)에 따른 비활성 스타일 적용</li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-8 border-t border-border-base pt-5 flex flex-col gap-2">

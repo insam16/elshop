@@ -347,14 +347,14 @@ type PostRowProps = {
 };
 
 function PostRow({ post, premium, showBoard }: PostRowProps) {
-  const isUser = post.author.role === "USER";
+  const isDimmed = post.status === "COMPLETED" || post.status === "EXPIRED";
   return (
     <div
       className={`border rounded-xl px-4 py-3 hover:bg-muted transition-colors ${premium
         ? "bg-violet-50 border-violet-200 dark:bg-violet-950/20 dark:border-violet-800"
-        : isUser
-          ? "bg-card border-border-base"
-          : "bg-gray-100 border-gray-300 dark:bg-gray-900/60 dark:border-gray-800 dark:opacity-80"
+        : isDimmed
+          ? "bg-gray-100 border-gray-300 dark:bg-gray-900/60 dark:border-gray-800 dark:opacity-80"
+          : "bg-card border-border-base"
         }`}
     >
       {/* 배지 + (데스크탑: 제목) + 메타 */}
