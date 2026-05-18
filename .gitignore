@@ -42,3 +42,6 @@ next-env.d.ts
 
 # tmp
 tmp/*
+
+# claude code local settings
+.claude/settings.local.json
