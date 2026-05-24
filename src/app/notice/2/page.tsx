@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "사기 예방 안내 | 엘샵" };
+export const metadata = { title: "사기 예방 안내 | 엘소드 샵" };
 
 function Section({ number, title, examples, warning }: {
   number: number;
@@ -104,7 +104,7 @@ export default function Notice2Page() {
           </div>
 
           <p className="text-muted-foreground border-l-2 border-border-base pl-3">
-            ※ 엘샵은 거래를 직접 중개하지 않습니다.<br />
+            ※ 엘소드 샵은 거래를 직접 중개하지 않습니다.<br />
             모든 거래는 이용자 간에 이루어지며, 책임은 당사자에게 있습니다.
           </p>
 

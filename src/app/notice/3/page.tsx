@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "업데이트 v1.6 — 연락하기 | 엘샵" };
+export const metadata = { title: "업데이트 v1.6 — 연락하기 | 엘소드 샵" };
 
 export default function Notice3Page() {
   return (
@@ -17,7 +17,7 @@ export default function Notice3Page() {
 
         <div className="text-sm leading-relaxed flex flex-col gap-6 text-foreground">
 
-          <p>안녕하세요, 엘샵 관리자 늘춍입니다.<br />오늘 여러 기능이 추가·변경되었습니다.</p>
+          <p>안녕하세요, 엘소드 샵 관리자 늘춍입니다.<br />오늘 여러 기능이 추가·변경되었습니다.</p>
 
           {/* 연락하기 */}
           <div className="flex flex-col gap-3 bg-pink-100 dark:bg-pink-900/50 border border-pink-300 dark:border-pink-500 rounded-xl px-4 py-4">

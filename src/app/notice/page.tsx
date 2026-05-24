@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notices } from "@/lib/data/notices";
 
-export const metadata = { title: "공지사항 | 엘샵" };
+export const metadata = { title: "공지사항 | 엘소드 샵" };
 
 const sorted = [...notices].sort((a, b) => b.id - a.id);
 const pinned = sorted.filter((n) => n.important);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "엘샵 오픈 안내드립니다 | 엘샵" };
+export const metadata = { title: "엘소드 샵 오픈 안내드립니다 | 엘소드 샵" };
 
 export default function Notice1Page() {
   return (
@@ -12,11 +12,11 @@ export default function Notice1Page() {
       </div>
 
       <div className="card">
-        <h1 className="text-xl font-bold mb-1">엘샵 오픈 안내드립니다</h1>
+        <h1 className="text-xl font-bold mb-1">엘소드 샵 오픈 안내드립니다</h1>
         <p className="text-sm text-muted-foreground mb-6">2026-04-28 15:00 · 관리자#늘춍</p>
 
         <div className="text-sm leading-relaxed flex flex-col gap-4 text-foreground">
-          <p>안녕하세요.<br />엘샵을 개발한 늘춍입니다.</p>
+          <p>안녕하세요.<br />엘소드 샵을 개발한 늘춍입니다.</p>
 
           <p>
             2026년 4월 18일, 엘소드몰 서비스 종료 소식을 접했습니다.<br />
@@ -25,11 +25,11 @@ export default function Notice1Page() {
 
           <p>
             그 아쉬움을 조금이나마 덜고자,<br />
-            간단한 형태지만 거래 정보를 공유할 수 있는 공간인 엘샵을 직접 제작하게 되었습니다.
+            간단한 형태지만 거래 정보를 공유할 수 있는 공간인 엘소드 샵을 직접 제작하게 되었습니다.
           </p>
 
           <p className="text-muted-foreground border-l-2 border-border-base pl-3">
-            ※ 엘샵은 거래를 직접 중개하지 않습니다.<br />
+            ※ 엘소드 샵은 거래를 직접 중개하지 않습니다.<br />
             유저 간 거래 정보 공유를 위한 게시판 형태의 서비스입니다.<br />
             거래는 이용자 간에 이루어지며, 모든 책임은 당사자에게 있습니다.
           </p>

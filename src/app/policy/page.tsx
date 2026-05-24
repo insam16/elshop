@@ -1,4 +1,4 @@
-export const metadata = { title: "운영 정책 | 엘샵" };
+export const metadata = { title: "운영 정책 | 엘소드 샵" };
 
 export default function PolicyPage() {
   return (

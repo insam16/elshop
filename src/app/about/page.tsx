@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "엘샵 소개 | 엘샵" };
+export const metadata = { title: "엘소드 샵 소개 | 엘소드 샵" };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -14,7 +14,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function AboutPage() {
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold mb-6">엘샵 소개</h1>
+      <h1 className="text-xl font-bold mb-6">엘소드 샵 소개</h1>
 
       <div className="flex flex-col gap-4">
 
@@ -31,7 +31,7 @@ export default function AboutPage() {
             <li>오래된 거래글이 방치되는 문제</li>
             <li>사기 및 비매너 유저에 대한 대응 한계</li>
           </ul>
-          <p>엘샵은 이 문제를 해결하기 위해 시작되었습니다.</p>
+          <p>엘소드 샵은 이 문제를 해결하기 위해 시작되었습니다.</p>
         </div>
 
         {/* 해결 방식 */}
@@ -65,7 +65,7 @@ export default function AboutPage() {
         {/* 트레이드오프 */}
         <div className="card flex flex-col gap-3 text-sm leading-relaxed">
           <p className="font-semibold text-base">우리가 선택한 트레이드오프</p>
-          <p className="text-muted-foreground">엘샵은 모든 문제를 강하게 통제하기보다, 유입과 안전성 사이의 균형을 선택했습니다.</p>
+          <p className="text-muted-foreground">엘소드 샵은 모든 문제를 강하게 통제하기보다, 유입과 안전성 사이의 균형을 선택했습니다.</p>
           <div className="flex flex-col gap-1 text-muted-foreground">
             <p>인증 필수화 ❌ → 인증 선택화 ⭕ (유입 유지 + 신뢰 선택적 확보)</p>
             <p>강한 사전 검열 ❌ → 신고 기반 대응 ⭕ (유연한 운영)</p>

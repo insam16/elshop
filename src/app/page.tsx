@@ -42,7 +42,7 @@ export default function HomePage() {
 
       {/* 기능 소개 */}
       <div className="flex flex-col gap-3">
-        <p className="font-semibold">엘샵은 이렇게 해결합니다</p>
+        <p className="font-semibold">엘소드 샵은 이렇게 해결합니다</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             {

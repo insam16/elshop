@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import VerifyCopyButton from "@/app/account/_components/VerifyCopyButton";
 
-export const metadata = { title: "본캐 인증 안내 | 엘샵" };
+export const metadata = { title: "본캐 인증 안내 | 엘소드 샵" };
 
 export default async function VerifyPage() {
   const session = await auth();
@@ -18,7 +18,7 @@ export default async function VerifyPage() {
         {/* 한 줄 요약 */}
         <div className="card">
           <p className="text-sm leading-relaxed">
-            엘샵은 인증 없이도 대부분의 기능을 이용할 수 있습니다.<br />
+            엘소드 샵은 인증 없이도 대부분의 기능을 이용할 수 있습니다.<br />
             다만, <strong>게시글 작성자의 연락처 확인은 인증 유저에게만 제공됩니다.</strong>
           </p>
         </div>

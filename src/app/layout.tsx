@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "엘샵 - 엘소드 거래 게시판",
+  title: "엘소드 샵 - 엘소드 거래 게시판",
   description: "엘소드 유저들을 위한 아이템 거래 게시판",
 };
 
