@@ -30,7 +30,7 @@ export const notices: Notice[] = [
   {
     id: 1,
     date: "2026.04.28",
-    title: "엘샵 오픈 안내드립니다",
+    title: "엘소드 샵 오픈 안내드립니다",
     href: "/notice/1",
     external: false,
     important: false,

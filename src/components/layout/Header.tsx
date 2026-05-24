@@ -22,8 +22,8 @@ export default async function Header() {
       <div className="mx-auto max-w-4xl px-4 py-3 flex items-center justify-between">
         <Link href="/" className="font-bold text-base hover:text-primary-base transition-colors">
           <div className="flex items-center gap-1.5">
-            <img className="w-4 h-4" src="/favicon.ico" alt="엘샵" />
-            엘샵
+            <img className="w-4 h-4" src="/favicon.ico" alt="엘소드 샵" />
+            엘소드 샵
           </div>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
